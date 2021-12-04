@@ -15,4 +15,6 @@ pluginManagement {
 }
 
 rootProject.name = "kelegram"
-include("server", "client")
+include("common")
+include("server")
+include("client")
