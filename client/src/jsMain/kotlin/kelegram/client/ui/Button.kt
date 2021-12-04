@@ -1,13 +1,18 @@
+package kelegram.client.ui
+
 import androidx.compose.runtime.Composable
 import kelegram.client.KelegramStylesheet
-import kelegram.client.ui.BorderRadiusValue
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.Button as ButtonDom
 
+// TODO: create many variants (primary, secondary, neutral)
 object ButtonStyle : StyleSheet() {
     val button by style {
         cursor("pointer")
         padding(0.75.cssRem)
+        paddingLeft(1.cssRem)
+        paddingRight(1.cssRem)
+        boxSizing("border-box")
         fontWeight("bolder")
         fontSize(1.5.cssRem)
         border {
@@ -21,20 +26,27 @@ object ButtonStyle : StyleSheet() {
     }
 }
 
+enum class Variant(val style: String) {
+    Primary(KelegramStylesheet.bgPrimary),
+    Secondary(KelegramStylesheet.bgSecondary),
+    Neutral(KelegramStylesheet.bgNeutral),
+}
+
 @Composable
 fun Button(
     onClick: (() -> Unit)? = null,
-    fullWidth: Boolean = true,
+    fullWidth: Boolean = false,
+    variant: Variant = Variant.Primary,
+    borderRadius: BorderRadiusValue = BorderRadiusValue.Large,
     content: @Composable () -> Unit
 ) {
     val click = onClick
-    Style(ButtonStyle)
     ButtonDom(attrs = {
         classes(
-            KelegramStylesheet.bgPrimary,
             KelegramStylesheet.primaryText,
-            BorderRadiusValue.Large.style,
-            ButtonStyle.button
+            borderRadius.style,
+            ButtonStyle.button,
+            variant.style
         )
         if (click != null) {
             onClick { click() }

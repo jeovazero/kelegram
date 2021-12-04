@@ -4,7 +4,9 @@ import org.jetbrains.compose.web.css.*
 
 data class Palette(
     val primary: CSSColorValue = hsl(223, 81, 70),
+    val primaryOpacity: CSSColorValue = hsla(223, 81, 70,0.56),
     val primaryPair: CSSColorValue = hsl(190, 70, 57),
+    val primaryPairOpacity: CSSColorValue = hsla(190, 70, 57,0.56),
     val primaryText: CSSColorValue = hsl(0, 0, 100),
     val secondary: CSSColorValue = hsl(0, 100, 81),
     val secondaryPair: CSSColorValue = hsl(0, 100, 89),

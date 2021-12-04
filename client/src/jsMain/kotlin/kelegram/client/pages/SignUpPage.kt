@@ -1,9 +1,13 @@
+package kelegram.client.pages
+
 import androidx.compose.runtime.Composable
-import kelegram.client.AppCSSVariables
-import kelegram.client.MState
+import androidx.compose.runtime.rememberCoroutineScope
+import kelegram.client.*
 import kelegram.client.tokens.Token
+import kelegram.client.ui.Button
 import kelegram.client.ui.Logo
 import kelegram.client.ui.Stack
+import kotlinx.browser.document
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.attributes.name
@@ -13,6 +17,7 @@ import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.H3
 import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Text
+import org.w3c.dom.HTMLInputElement
 
 object SignUpStylesheet : StyleSheet() {
     val wrapper by style {
@@ -60,6 +65,7 @@ object SignUpStylesheet : StyleSheet() {
 
 @Composable
 fun RegisterForm(mstate: MState) {
+    val scope = rememberCoroutineScope()
     Div {
         Stack {
             Input(type = InputType.Text,attrs = {
@@ -69,10 +75,12 @@ fun RegisterForm(mstate: MState) {
             })
         }
         Button(
+            fullWidth = true,
             onClick = {
-                mainScope.launch {
-                    createAccount()
-                    setMe(mstate)
+                val nickname =
+                    document.querySelector("input[name=nickname]") as HTMLInputElement
+                scope.launch {
+                    dispatch(mstate, Action.CreateAccount(nickname.value))
                 }
             }
         ) {
@@ -82,7 +90,7 @@ fun RegisterForm(mstate: MState) {
 }
 
 @Composable
-fun Signup(state: MState) {
+fun SignupPage(state: MState) {
     Style(SignUpStylesheet)
     Stack(className = SignUpStylesheet.wrapper) {
         Div (attrs =  { classes(SignUpStylesheet.headerBox) }) {

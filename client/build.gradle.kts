@@ -2,8 +2,8 @@ import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension
 
 plugins {
     application
-    kotlin("multiplatform") version "1.5.31"
-    id("org.jetbrains.compose") version "1.0.0-beta5"
+    id("org.jetbrains.compose") version "1.0.0"
+    kotlin("multiplatform")
     kotlin("plugin.serialization") version "1.5.31"
 }
 
@@ -20,9 +20,13 @@ kotlin {
     }
 
     sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(project(":common"))
+            }
+        }
         val jsMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
                 implementation(compose.web.core)
                 implementation(compose.runtime)
             }
