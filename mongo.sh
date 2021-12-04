@@ -1,0 +1,1 @@
+docker run --name mongodb -d -p 27017:27017 mongo:5.0.4-focal
