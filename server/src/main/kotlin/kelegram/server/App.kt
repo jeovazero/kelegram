@@ -21,6 +21,8 @@ import org.litote.kmongo.id.serialization.IdKotlinXSerializationModule
 import java.util.*
 import kotlin.collections.HashMap
 import kelegram.common.*
+import kelegram.server.routes.inviteRoutes
+import kelegram.server.routes.ownedRoomRoutes
 
 data class UserSession(val id: String)
 
@@ -69,24 +71,10 @@ val App = fun Application.() {
     }
 
     routing {
+        ownedRoomRoutes()
+        inviteRoutes()
         get("/") {
             call.respondText("What did you learn?")
-        }
-
-        post("/ownedrooms") {
-            val usession = call.sessions.get<UserSession>()
-            val newRoom = call.receive<NewRoom>()
-            if (usession != null) {
-                val user = UserDomain.get(usession.id)
-                if (user != null) {
-                    val result = RoomDomain.add(newRoom, user.id)
-                    call.respond(result.id)
-                } else {
-                    call.respondText(text="What did you learn?",status = HttpStatusCode.NotFound)
-                }
-            } else {
-                call.respondText(text="What did you learn?",status = HttpStatusCode.NotFound)
-            }
         }
 
         get("/rooms") {
@@ -146,58 +134,6 @@ val App = fun Application.() {
             } catch (err: Exception) {
                 println(err.printStackTrace())
                 call.respondText("Hello there Eror")
-            }
-        }
-
-        get("/invites/{id}") {
-            val uid = call.sessions.get<UserSession>()?.id
-            val inviteId = call.parameters["id"]
-            if (uid != null && inviteId != null) {
-                val invite = InviteDomain.getInfo(inviteId)
-                print(invite)
-                if (invite != null && invite.ownerId != uid) {
-                        call.respond(invite)
-                } else {
-                    call.respondText(text="What did you learn?",status = HttpStatusCode.InternalServerError)
-                }
-            } else {
-                call.respondText(text="What did you learn?",status = HttpStatusCode.NotFound)
-            }
-        }
-
-        post("/invites/{id}") {
-            val uid = call.sessions.get<UserSession>()?.id
-            val inviteId = call.parameters["id"]
-            if (uid != null && inviteId != null) {
-                val invite = InviteDomain.get(inviteId)
-                if (invite != null && invite.ownerId != uid) {
-                    RoomDomain.addMember(invite.roomId, uid)
-                    val room = RoomDomain.get(invite.roomId,invite.ownerId)
-                    if (room != null) {
-                        call.respond(room)
-                    } else {
-                        call.respondText(text="What did you learn?",status = HttpStatusCode.InternalServerError)
-                    }
-                }
-            } else {
-                call.respondText(text="What did you learn?",status = HttpStatusCode.NotFound)
-            }
-        }
-
-        post("/ownedrooms/{id}/invites") {
-            val usession = call.sessions.get<UserSession>()
-            val rid = call.parameters["id"]
-            val uid = usession?.id
-            if (uid != null && rid != null) {
-                val room = RoomDomain.get(rid,uid)
-                if (room != null) {
-                    val invite = InviteDomain.add(rid,uid)
-                    call.respondText(text="/invites/${invite.id}")
-                } else {
-                    call.respondText(text="What did you learn?",status = HttpStatusCode.Forbidden)
-                }
-            } else {
-                call.respondText(text="What did you learn?",status = HttpStatusCode.Unauthorized)
             }
         }
 
