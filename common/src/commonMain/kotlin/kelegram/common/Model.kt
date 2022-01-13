@@ -2,8 +2,6 @@ package kelegram.common
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-// import org.litote.kmongo.Id
-// import org.litote.kmongo.newId
 
 @Serializable
 data class NewUser(val nickname: String)

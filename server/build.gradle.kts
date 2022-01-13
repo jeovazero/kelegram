@@ -3,7 +3,7 @@ val logback_version: String by extra
 
 plugins {
     application
-    kotlin("jvm") // version "1.5.31"
+    kotlin("jvm")
     kotlin("plugin.serialization") version "1.5.31"
 }
 
