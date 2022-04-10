@@ -1,5 +1,6 @@
 package kelegram.client
 
+import androidx.compose.runtime.setValue
 import kelegram.common.*
 import kotlinx.browser.window
 import kotlinx.coroutines.await
@@ -10,6 +11,7 @@ import org.w3c.fetch.RequestInit
 import org.w3c.fetch.Response
 import kotlin.js.json
 import kotlinx.serialization.json.Json as JsonBase
+import kotlinx.serialization.encodeToString
 
 const val BASE = "http://localhost:8000"
 
@@ -82,7 +84,8 @@ suspend fun createAccount(nickname: String): Boolean {
     val r = request(
         path = "/account",
         method = "POST",
-        body = JSON.stringify(json("nickname" to nickname))
+        body = JsonBase.encodeToString(NewUser(nickname,
+            IdentityProvider(nickname,Provider.Fake)))
     )
     return r.ok
 }
@@ -129,7 +132,6 @@ suspend fun getInvite(inviteId: String): InviteInfo? {
         path = "/invites/$inviteId",
         method = "GET"
     )
-    console.log("R", r.ok)
     if (r.ok) {
         val w = r.text().await()
         return Json.decodeFromString(w)

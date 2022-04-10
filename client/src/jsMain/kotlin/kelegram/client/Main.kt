@@ -1,13 +1,14 @@
+package kelegram.client
+
 import androidx.compose.runtime.*
 import kelegram.client.*
 import kelegram.client.State
 import kelegram.client.pages.LoadingPage
 import kelegram.client.pages.MainPage
-import kelegram.client.pages.SignupPage
+import kelegram.client.pages.LoginPage
 import kelegram.client.ui.AppWrapper
 import kelegram.client.ui.ButtonStyle
 import kelegram.client.ui.SpacingStyle
-import kotlinx.browser.window
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.renderComposable
 import org.w3c.dom.WebSocket
@@ -160,7 +161,7 @@ fun main() {
             if (user != null) {
                 val nextState = state.value.copy(screen = AppScreen.Main)
                 if (state.value.socket == null) {
-                    val socket = WebSocket(url = "ws://localhost:8000/ember")
+                    val socket = WebSocket(url = "ws://localhost:8000/kek")
                     nextState.socket = socket
                 }
                 state.value = nextState
@@ -174,13 +175,9 @@ fun main() {
         AppWrapper {
             when(state.value.screen) {
                 AppScreen.Loading -> LoadingPage(state)
-                AppScreen.SignUp -> SignupPage(state)
+                AppScreen.SignUp -> LoginPage(state)
                 AppScreen.Main -> MainPage(state)
-                //AppScreen.RoomCreation -> RoomCreation(state)
-                //AppScreen.InviteCreation -> InviteCreation(state)
-                //AppScreen.Invite -> Invite(state,inviteState)
             }
-            //Invite(owner="Akasha")
         }
     }
 }

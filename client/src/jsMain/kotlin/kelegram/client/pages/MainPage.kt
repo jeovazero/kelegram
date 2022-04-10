@@ -164,7 +164,6 @@ object BaloonStyle : StyleSheet() {
 
 @Composable
 fun MessageBaloon(message: String, nickname: String, isOwn: Boolean = false) {
-    Style(BaloonStyle)
     Div(attrs = {
         classes(BaloonStyle.wrapper)
         if (isOwn) {
@@ -258,8 +257,62 @@ fun Members(modalSelectState: ModalSelectState, currentUser: User, members: List
 }
 
 @Composable
+fun Header(username: String?) {
+    Div(attrs = { classes(MainStylesheet.headerBox) }) {
+        Logo()
+        if (username != null) {
+            H3(attrs = { classes(MainStylesheet.user) }) { Text(username) }
+        }
+    }
+}
+
+@Composable
+fun Chat(name: String, messages: List<MessageInfo>, userId: String?, state: MState) {
+
+        Stack {
+            Div(attrs = { classes(MainStylesheet.listHeader) }) {
+                H3(attrs = { classes(MainStylesheet.title) }) {
+                    Text(name)
+                }
+            }
+            Div(attrs = {
+                classes(MainStylesheet.messages)
+            }) {
+                Stack {
+                    messages.forEach { message ->
+                        MessageBaloon(message.content,
+                            message.user.nickname, message.user.id == userId)
+                    }
+                }
+            }
+            Inline {
+                Input(type = InputType.Text, attrs = {
+                    placeholder("Say hello...")
+                    classes(MainStylesheet.input)
+                    name("newmessage")
+                })
+                Button(
+                    onClick = {
+                        val input =
+                            document.querySelector("input[name=newmessage]") as HTMLInputElement
+                        val m = NewMessage(
+                            fromUser = state.value.user?.id ?: "",
+                            toRoom = state.value.selectedRoom?.id
+                                ?: "",
+                            content = input.value
+                        )
+                        state.value.socket?.send(Json.encodeToString(
+                            m))
+                    }
+                ) { Text("Send") }
+            }
+        }
+}
+
+@Composable
 fun MainPage(state: MState) {
     Style(MainStylesheet)
+    Style(BaloonStyle)
     val modalSelectState = remember { mutableStateOf(ModalSelect.None) }
     val msg = remember { mutableStateListOf<MessageInfo>() }
     val membersState = remember { mutableStateListOf<UserInfo>() }
@@ -270,6 +323,8 @@ fun MainPage(state: MState) {
     val hash = window.location.hash
     console.log(hash)
     val inviteState = remember { mutableStateOf<InviteInfo?>(null) }
+    val inviteLink = remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(hash) {
         val paths = hash.split("/")
         if (paths.size >= 3) {
@@ -301,12 +356,7 @@ fun MainPage(state: MState) {
     val rooms = state.value.rooms ?: listOf()
     val selectedRoom = state.value.selectedRoom
     Stack(className = MainStylesheet.wrapper) {
-        Div(attrs = { classes(MainStylesheet.headerBox) }) {
-            Logo()
-            if (user != null) {
-                H3(attrs = { classes(MainStylesheet.user) }) { Text(user.nickname) }
-            }
-        }
+        Header(user?.nickname)
         Div(attrs = { classes(MainStylesheet.box) }) {
             Inline {
                 Rooms(modalSelectState,
@@ -334,45 +384,13 @@ fun MainPage(state: MState) {
                         }
                     })
                 Div(attrs = { classes(MainStylesheet.chat) }) {
-                    Stack {
-                        if (selectedRoom != null) {
-                            Div(attrs = { classes(MainStylesheet.listHeader) }) {
-                                H3(attrs = { classes(MainStylesheet.title) }) {
-                                    Text(selectedRoom.name)
-                                }
-                            }
-                        }
-                        Div(attrs = {
-                            classes(MainStylesheet.messages)
-                        }) {
-                            Stack {
-                                msg.forEach { message ->
-                                    MessageBaloon(message.content,
-                                        message.user.nickname, message.user.id == user?.id)
-                                }
-                            }
-                        }
-                        Inline {
-                            Input(type = InputType.Text, attrs = {
-                                placeholder("Say hello...")
-                                classes(MainStylesheet.input)
-                                name("newmessage")
-                            })
-                            Button(
-                                onClick = {
-                                    val input =
-                                        document.querySelector("input[name=newmessage]") as HTMLInputElement
-                                    val m = NewMessage(
-                                        fromUser = state.value.user?.id ?: "",
-                                        toRoom = state.value.selectedRoom?.id
-                                            ?: "",
-                                        content = input.value
-                                    )
-                                    state.value.socket?.send(Json.encodeToString(
-                                        m))
-                                }
-                            ) { Text("Send") }
-                        }
+                    if (selectedRoom != null) {
+                        Chat(selectedRoom.name,
+                            messages = msg,
+                            userId = user?.id,
+                            state)
+                    } else {
+                        Div { Text("Select a room") }
                     }
                 }
                 Div(attrs = { classes(MainStylesheet.list) }) {
@@ -396,9 +414,12 @@ fun MainPage(state: MState) {
             modalSelectState.value = ModalSelect.None
         }, onConfirm = {
             if (selectedRoom?.id != null) {
-                scope.launch { createInvite(selectedRoom.id) }
+                scope.launch {
+                    val result = createInvite(selectedRoom.id)
+                    inviteLink.value = result
+                }
             }
-        })
+        }, inviteLink = inviteLink.value)
         ModalSelect.AcceptInvite -> {
             val invite = inviteState.value
             if (invite != null) {

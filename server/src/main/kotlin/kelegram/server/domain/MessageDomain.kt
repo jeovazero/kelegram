@@ -1,7 +1,7 @@
 package kelegram.server.domain
 
-import kelegram.server.persistence.MessagePersistence
+import kelegram.server.data.MessageData
 
 object MessageDomain {
-    val add = MessagePersistence::add
+    val create = MessageData::add
 }

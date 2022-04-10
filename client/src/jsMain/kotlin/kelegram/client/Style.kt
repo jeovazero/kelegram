@@ -35,7 +35,7 @@ fun CSSBuilder.createBG(
     color2: CSSColorValue,
 ) {
    background(
-            "linear-gradient(115deg, $color1 10.95%, $color2 94.7%)"
+       "linear-gradient(115deg, $color1 10.95%, $color2 94.7%)"
    )
 }
 

@@ -1,47 +1,75 @@
 package kelegram.server.routes
 
-import io.ktor.application.*
-import io.ktor.http.*
-import io.ktor.response.*
-import io.ktor.routing.*
-import io.ktor.sessions.*
-import kelegram.server.UserSession
+import kelegram.common.InviteInfo
+import kelegram.common.Room
 import kelegram.server.domain.InviteDomain
 import kelegram.server.domain.RoomDomain
+import kelegram.server.domain.UserDomain
+import kotlinx.coroutines.runBlocking
+import org.http4k.core.Body
+import org.http4k.core.HttpHandler
+import org.http4k.core.Method
+import org.http4k.core.Response
+import org.http4k.core.Status.Companion.BAD_REQUEST
+import org.http4k.core.Status.Companion.NOT_FOUND
+import org.http4k.core.Status.Companion.OK
+import org.http4k.core.cookie.cookie
+import org.http4k.format.KotlinxSerialization.auto
+import org.http4k.routing.RoutingHttpHandler
+import org.http4k.routing.bind
+import org.http4k.routing.path
+import org.http4k.routing.routes
 
-fun Route.inviteRoutes() {
-    get("/invites/{id}") {
-        val uid = call.sessions.get<UserSession>()?.id
-        val inviteId = call.parameters["id"]
+val inviteInfoLens = Body.auto<InviteInfo>().toLens()
+val roomLens = Body.auto<Room>().toLens()
+
+val invites: HttpHandler = { req ->
+    runBlocking {
+        val sessionId = req.cookie(SESSION_COOKIE)?.value
+        val session = sessionId?.let { s -> UserDomain.getSession(s) }
+        val uid = session?.userId
+        val inviteId = req.path("id")
         if (uid != null && inviteId != null) {
             val invite = InviteDomain.getInfo(inviteId)
             print(invite)
             if (invite != null && invite.ownerId != uid) {
-                call.respond(invite)
+                inviteInfoLens(invite, Response(OK))
             } else {
-                call.respondText(text="What did you learn?",status = HttpStatusCode.InternalServerError)
+                Response(BAD_REQUEST)
             }
         } else {
-            call.respondText(text="What did you learn?",status = HttpStatusCode.NotFound)
+            Response(NOT_FOUND)
         }
     }
+}
 
-    post("/invites/{id}") {
-        val uid = call.sessions.get<UserSession>()?.id
-        val inviteId = call.parameters["id"]
+val createInvite: HttpHandler = { req ->
+    runBlocking {
+        val sessionId = req.cookie(SESSION_COOKIE)?.value
+        val session = sessionId?.let { s -> UserDomain.getSession(s) }
+        val uid = session?.userId
+        val inviteId = req.path("id")
         if (uid != null && inviteId != null) {
             val invite = InviteDomain.get(inviteId)
             if (invite != null && invite.ownerId != uid) {
                 RoomDomain.addMember(invite.roomId, uid)
                 val room = RoomDomain.get(invite.roomId,invite.ownerId)
                 if (room != null) {
-                    call.respond(room)
+                    roomLens(room, Response(OK))
                 } else {
-                    call.respondText(text="What did you learn?",status = HttpStatusCode.InternalServerError)
+                    Response(BAD_REQUEST) // not sure
                 }
+            } else {
+                Response(BAD_REQUEST) // not sure
             }
         } else {
-            call.respondText(text="What did you learn?",status = HttpStatusCode.NotFound)
+            Response(NOT_FOUND)
         }
     }
 }
+
+fun inviteRoutes(): RoutingHttpHandler =
+    "/invites/{id:.*}" bind routes(
+        Method.GET to invites,
+        Method.POST to createInvite
+    )
