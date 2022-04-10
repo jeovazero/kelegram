@@ -28,18 +28,15 @@ dependencies {
     implementation("org.http4k:http4k-security-oauth:$http4k_version")
     implementation("org.http4k:http4k-format-kotlinx-serialization:$http4k_version")
     implementation("org.http4k:http4k-format-jackson:$http4k_version")
-    // Use the Kotlin JDK 8 standard library.
-    implementation(kotlin("stdlib-jdk8"))
 
     implementation("ch.qos.logback:logback-classic:$logback_version")
-    implementation("org.litote.kmongo:kmongo-coroutine:4.5.1")
+    implementation("org.litote.kmongo:kmongo-coroutine-serialization:4.5.1")
     implementation("org.litote.kmongo:kmongo-id-serialization:4.5.1")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
 
     implementation(project(":common"))
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlin_version")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.2")
 }
 
 application {
@@ -51,19 +48,19 @@ application {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 tasks {
     compileKotlin {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = "11"
     }
     compileTestKotlin {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = "11"
     }
     compileTestJava {
-        targetCompatibility = "1.8"
+        targetCompatibility = "11"
     }
     shadowJar {
         manifest {
@@ -71,7 +68,6 @@ tasks {
         }
     }
 }
-
 
 nativeBuild {
     buildArgs.add("--initialize-at-build-time=ch.qos.logback,org.slf4j,javax.xml,jdk.xml")

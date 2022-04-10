@@ -1,0 +1,33 @@
+{
+  "resources":{
+  "includes":[
+    {
+      "pattern":"\\QMETA-INF/services/kotlin.reflect.jvm.internal.impl.resolve.ExternalOverridabilityCondition\\E"
+    }, 
+    {
+      "pattern":"\\QMETA-INF/services/org.litote.kmongo.service.ClassMappingTypeService\\E"
+    }, 
+    {
+      "pattern":"\\Qlogback.xml\\E"
+    }, 
+    {
+      "pattern":"\\Qmozilla/public-suffix-list.txt\\E"
+    }, 
+    {
+      "pattern":"\\Qorg/apache/hc/client5/version.properties\\E"
+    }, 
+    {
+      "pattern":"\\Qorg/slf4j/impl/StaticLoggerBinder.class\\E"
+    },
+    {
+      "pattern": "META-INF/.*.kotlin_module$"
+    },
+    {
+      "pattern": "META-INF/services/.*"
+    },
+    {
+      "pattern": ".*.kotlin_builtins"
+    }
+  ]},
+  "bundles":[]
+}

@@ -1,8 +1,8 @@
 package kelegram.server.oauth
 
-import kelegram.server.model.NewUser
-import kelegram.server.model.IdentityProvider
-import kelegram.server.model.Provider
+import kelegram.common.NewUser
+import kelegram.common.IdentityProvider
+import kelegram.common.Provider
 import kelegram.server.domain.UserDomain
 import kelegram.server.routes.SESSION_COOKIE
 import kotlinx.coroutines.runBlocking
@@ -40,7 +40,12 @@ fun githubOAuth(
     oauthServerHttp: HttpHandler = ApacheClient()
 ): RoutingHttpHandler {
     val oAuthProvider = OAuthProvider(
-        OAuthProviderConfig(oauthServerUri, "/login/oauth/authorize", "/login/oauth/access_token", credentials),
+        OAuthProviderConfig(
+            oauthServerUri,
+            "/login/oauth/authorize",
+            "/login/oauth/access_token",
+            credentials
+        ),
         oauthServerHttp,
         Uri.of("http://localhost:8000/callback"),
         listOf("read:user", "user:email"),
