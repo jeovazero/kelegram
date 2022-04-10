@@ -3,7 +3,7 @@ package kelegram.server.data
 import kelegram.common.IdentityProvider
 import kelegram.common.Provider
 import kelegram.common.Room
-import kelegram.common.User
+import kelegram.server.model.User
 import org.litote.kmongo.*
 import org.litote.kmongo.coroutine.aggregate
 

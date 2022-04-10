@@ -1,7 +1,7 @@
 package kelegram.server.domain
 
-import kelegram.common.NewUser
-import kelegram.common.User
+import kelegram.server.model.NewUser
+import kelegram.server.model.User
 import kelegram.server.data.SessionData
 import kelegram.server.data.UserData
 import kelegram.server.model.Session

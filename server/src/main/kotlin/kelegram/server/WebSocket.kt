@@ -33,11 +33,11 @@ fun webSocket() = websockets(
         ))))
         val req = ws.upgradeRequest
         val sessionId = req.cookie(SESSION_COOKIE)?.value
-        println("SESSION $sessionId")
+        // println("SESSION $sessionId")
         val session = runBlocking {
             sessionId?.let { s -> UserDomain.getSession(s) }
         }
-        println("SESSION = $session")
+        println("SESSION")
         if (session == null) {
             ws.close(
                 WsStatus(REFUSE.code,"Not authorized")

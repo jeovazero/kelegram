@@ -1,13 +1,12 @@
 package kelegram.common
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 @Serializable
 enum class Provider {
-    @SerialName("GITHUB") Github,
-    @SerialName("FAKE") Fake
+    Github,
+    Fake
 }
 
 @Serializable

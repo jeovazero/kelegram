@@ -1,7 +1,7 @@
 package kelegram.server.routes
 
-import kelegram.common.NewUser
-import kelegram.common.User
+import kelegram.server.model.NewUser
+import kelegram.server.model.User
 import kelegram.server.domain.UserDomain
 import kelegram.server.domain.UserDomain.getById
 import kotlinx.coroutines.runBlocking
@@ -11,7 +11,7 @@ import org.http4k.core.Status.Companion.NOT_FOUND
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.http4k.format.KotlinxSerialization.auto
+import org.http4k.format.Jackson.auto
 import org.http4k.routing.RoutingHttpHandler
 import org.http4k.routing.bind
 import org.http4k.routing.routes
@@ -24,7 +24,7 @@ val me: HttpHandler = { req ->
     runBlocking {
         val sessionId = req.cookie(SESSION_COOKIE)?.value
         val session = sessionId?.let { s -> UserDomain.getSession(s) }
-        println("Session: $session")
+        println("Session: ")
         if (session != null) {
             val u = getById(session.userId)
             println("Session user: $u")

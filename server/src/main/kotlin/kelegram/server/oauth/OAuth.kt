@@ -1,9 +1,8 @@
 package kelegram.server.oauth
 
-import io.undertow.util.RedirectBuilder
-import kelegram.common.IdentityProvider
-import kelegram.common.NewUser
-import kelegram.common.Provider
+import kelegram.server.model.NewUser
+import kelegram.server.model.IdentityProvider
+import kelegram.server.model.Provider
 import kelegram.server.domain.UserDomain
 import kelegram.server.routes.SESSION_COOKIE
 import kotlinx.coroutines.runBlocking
@@ -22,7 +21,6 @@ import org.http4k.core.Status.Companion.FOUND
 import org.http4k.core.Status.Companion.INTERNAL_SERVER_ERROR
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.cookie.Cookie
-import org.http4k.filter.ClientFilters
 
 @Serializable
 data class UserGithub(
