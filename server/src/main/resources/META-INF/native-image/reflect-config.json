@@ -111,6 +111,34 @@
     "allPublicFields": true
   },
   {
+    "name": "com.mongodb.UnixServerAddress",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": ["java.lang.String"]
+      }
+    ]
+  },
+  {
+    "name": "com.mongodb.internal.connection.SnappyCompressor",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.mongodb.internal.connection.ZstdCompressor",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+
+  {
     "name": "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
     "methods": [
       {
@@ -959,6 +987,9 @@
     ]
   },
   {
+    "name": "io.netty.util.internal.logging.Log4J2Logger"
+  },
+  {
     "name": "java.io.FilePermission"
   },
   {
@@ -1484,6 +1515,9 @@
   },
   {
     "name": "org.slf4j.Logger"
+  },
+  {
+    "name": "com.sun.jna.Structure$FFIType[]"
   },
   {
     "name": "sun.misc.Unsafe",

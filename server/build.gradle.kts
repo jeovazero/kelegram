@@ -37,6 +37,14 @@ dependencies {
 
     implementation(project(":common"))
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlin_version")
+
+    // Attempt to remove the --allow-incomplete-classpath (almost)
+    implementation("com.github.jnr:jnr-unixsocket:0.38.17")
+    implementation("org.xerial.snappy:snappy-java:1.1.8.4")
+    implementation("com.github.luben:zstd-jni:1.5.2-2")
+    implementation("org.mongodb:mongodb-crypt:1.3.0")
+    implementation("org.apache.logging.log4j:log4j-api:2.17.2")
+
 }
 
 application {
@@ -70,13 +78,14 @@ tasks {
 }
 
 nativeBuild {
-    buildArgs.add("--initialize-at-build-time=ch.qos.logback,org.slf4j,javax.xml,jdk.xml")
-    buildArgs.add("--allow-incomplete-classpath")
+    buildArgs.add("--no-fallback")
     buildArgs.add("-H:+ReportExceptionStackTraces")
     buildArgs.add("--initialize-at-run-time=io.netty.util.internal.logging.Log4JLogger")
-    buildArgs.add("--initialize-at-build-time=com.sun.org.apache.xerces.internal.util,com.sun.org.apache.xerces.internal.impl,jdk.xml.internal,com.sun.xml.internal.stream.util,com.sun.org.apache.xerces.internal.xni,com.sun.org.apache.xerces.internal.utils")
-    //buildArgs.add("--initialize-at-run-time=io.netty.util.internal.logging,io.netty.channel.MultithreadEventLoopGroup,io.netty.bootstrap.ServerBootstrap,io.netty.util.internal.SystemPropertyUtil")
-    buildArgs.add("--trace-class-initialization=io.netty.util.internal.logging.LocationAwareSlf4JLogger, ")
+    buildArgs.add("--initialize-at-run-time=com.mongodb.UnixServerAddress,com.mongodb.internal.connection.SnappyCompressor")
+    buildArgs.add("--initialize-at-build-time=ch.qos.logback,org.slf4j,javax.xml,jdk.xml")
+    // I tried not to use this one, but with "sun.reflect.Reflection" and "org.apache.log4j.Logger" I don't think it's possible
+    buildArgs.add("--allow-incomplete-classpath")
+
     // https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/Agent.md#agent-advanced-usage
     // configurationFileDirectories.from(file("./config"))
 }
