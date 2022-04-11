@@ -5,4 +5,5 @@ object Config {
     val clientSecret = System.getenv("CLIENT_SECRET") ?: ""
     val allowedOrigins = (System.getenv("ALLOWED_ORIGINS") ?: "http://localhost:8080").split(";")
     val mongodbUrl = System.getenv("MONGODB_URL") ?: "mongodb://localhost"
+    val port = System.getenv("PORT")?.toInt() ?: 8000
 }

@@ -36,5 +36,5 @@ fun main() {
     )
     val ws = webSocket()
 
-    PolyHandler(http, ws).asServer(Netty(8000)) .start()
+    PolyHandler(http, ws).asServer(Netty(Config.port)) .start()
 }
