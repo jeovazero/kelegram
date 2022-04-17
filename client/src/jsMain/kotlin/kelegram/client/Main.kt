@@ -97,7 +97,7 @@ fun main() {
                     dispatch(state, Action.Redirect("/app"))
                 }
                 if (state.value.socket == null) {
-                    val socket = WebSocket(url = "ws://localhost:8000/kek")
+                    val socket = WebSocket(url = KelegramServer.WebSocket)
                     state.value.socket = socket
                 }
             }

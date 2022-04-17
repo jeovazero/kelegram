@@ -13,7 +13,11 @@ import kotlinx.serialization.json.Json as JsonBase
 import kotlinx.serialization.encodeToString
 import org.w3c.dom.events.Event
 
-const val BASE = "http://localhost:8000"
+object KelegramServer {
+    val SERVER = js("SERVER").unsafeCast<String>()
+    val BASE = "http://$SERVER"
+    val WebSocket = "ws://$SERVER/kek"
+}
 
 suspend fun request(
     path: String = "/",
@@ -21,7 +25,7 @@ suspend fun request(
     body: dynamic = null,
 ): Response? {
     val r  = try {
-        window.fetch(BASE + path, object : RequestInit {
+        window.fetch(KelegramServer.BASE + path, object : RequestInit {
             override var method: String? = method
             override var body: dynamic = body
             override var headers: dynamic = json(
