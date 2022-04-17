@@ -13,12 +13,15 @@ import org.w3c.dom.WebSocket
 enum class AppScreen {
     SignUp,
     Main,
-    Loading
+    Loading,
+    Login,
+    None
 }
 
 @Serializable
 data class State(
     var screen: AppScreen,
+    var routeParams: Map<String, String>? = null,
     var user: User? = null,
     var rooms: List<Room>? = null,
     var selectedRoom: Room? = null,

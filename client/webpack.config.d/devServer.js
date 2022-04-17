@@ -1,1 +1,4 @@
-// config.devServer.historyApiFallback = true
+  config.devServer = {
+    ...config.devServer,
+    "historyApiFallback": true
+  }

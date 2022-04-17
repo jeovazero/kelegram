@@ -12,6 +12,7 @@ import org.w3c.fetch.Response
 import kotlin.js.json
 import kotlinx.serialization.json.Json as JsonBase
 import kotlinx.serialization.encodeToString
+import org.w3c.dom.events.Event
 
 const val BASE = "http://localhost:8000"
 
@@ -19,29 +20,44 @@ suspend fun request(
     path: String = "/",
     method: String = "GET",
     body: dynamic = null,
-): Response {
-    return window.fetch(BASE + path, object : RequestInit {
-        override var method: String? = method
-        override var body: dynamic = body
-        override var headers: dynamic = json(
-            "Accept" to "application/json",
-            "Content-Type" to "application/json"
-        )
-        override var credentials: RequestCredentials? =
-            RequestCredentials.Companion.INCLUDE
-    }).await()
+): Response? {
+    val r  = try {
+        window.fetch(BASE + path, object : RequestInit {
+            override var method: String? = method
+            override var body: dynamic = body
+            override var headers: dynamic = json(
+                "Accept" to "application/json",
+                "Content-Type" to "application/json"
+            )
+            override var credentials: RequestCredentials? =
+                RequestCredentials.Companion.INCLUDE
+        }).catch {
+            console.log("$it")
+            null
+        }
+    } catch (e: Error) {
+        console.error("ERRO $e")
+        null
+    }
+    return r?.await()
 }
+
 
 val Json = JsonBase {
     ignoreUnknownKeys = true
 }
 
 suspend fun me(): User? {
-    val r = request(
-        path = "/me"
-    )
+    val r = try {
+        request(
+            path = "/me"
+        )
+    } catch (e: Error) {
+        console.error("ERROR $e")
+        return null
+    }
 
-    if (r.ok) {
+    if (r != null && r.ok) {
         val w = r.text().await()
         return Json.decodeFromString(w)
     }
@@ -51,7 +67,7 @@ suspend fun me(): User? {
 
 suspend fun getRooms(): List<Room>? {
     val r = request(path = "/rooms")
-    if (r.ok) {
+    if (r != null && r.ok) {
         val w = r.text().await()
         return Json.decodeFromString(w)
     }
@@ -62,7 +78,7 @@ suspend fun getMessages(id: String): List<MessageInfo>? {
     val r = request(
         path = "/rooms/$id/messages",
     )
-    if (r.ok) {
+    if (r != null && r.ok) {
         val w = r.text().await()
         return Json.decodeFromString(w)
     }
@@ -73,7 +89,7 @@ suspend fun getMembers(id: String): List<UserInfo>? {
     val r = request(
         path = "/rooms/$id/members",
     )
-    if (r.ok) {
+    if (r != null && r.ok) {
         val w = r.text().await()
         return Json.decodeFromString(w)
     }
@@ -87,7 +103,7 @@ suspend fun createAccount(nickname: String): Boolean {
         body = JsonBase.encodeToString(NewUser(nickname,
             IdentityProvider(nickname,Provider.Fake)))
     )
-    return r.ok
+    return r != null && r.ok
 }
 
 suspend fun createRoom(roomName: String): String? {
@@ -96,7 +112,7 @@ suspend fun createRoom(roomName: String): String? {
         method = "POST",
         body = JSON.stringify(json("name" to roomName))
     )
-    if (r.ok) {
+    if (r != null && r.ok) {
         return r.text().await()
     }
     return null
@@ -107,8 +123,8 @@ suspend fun createInvite(roomId: String): String? {
         path = "/ownedrooms/$roomId/invites",
         method = "POST"
     )
-    console.log("R", r.ok)
-    if (r.ok) {
+    console.log("R", r?.ok)
+    if (r != null && r.ok) {
         return r.text().await()
     }
     return null
@@ -119,8 +135,8 @@ suspend fun validateInvite(inviteId: String): Room? {
         path = "/invites/$inviteId",
         method = "POST"
     )
-    console.log("R", r.ok)
-    if (r.ok) {
+    console.log("R", r?.ok)
+    if (r != null && r.ok) {
         val w = r.text().await()
         return Json.decodeFromString(w)
     }
@@ -132,7 +148,7 @@ suspend fun getInvite(inviteId: String): InviteInfo? {
         path = "/invites/$inviteId",
         method = "GET"
     )
-    if (r.ok) {
+    if (r != null && r.ok) {
         val w = r.text().await()
         return Json.decodeFromString(w)
     }
@@ -141,11 +157,13 @@ suspend fun getInvite(inviteId: String): InviteInfo? {
 
 suspend fun defineMe(mstate: MState) {
     val user = me()
+    console.log("USER $user")
     if (user != null) {
         mstate.value = mstate.value.copy(user = user)
+        dispatch(mstate,Action.Redirect("/app"))
     } else {
-        mstate.value =
-            mstate.value.copy(user = null, screen = AppScreen.SignUp)
+        mstate.value = mstate.value.copy(user = null)
+        dispatch(mstate,Action.Redirect("/login"))
     }
 }
 
@@ -155,6 +173,7 @@ sealed class Action {
     data class CreateRoom(val roomName: String) : Action()
     object GetRooms : Action()
     data class SetRoom(val room: Room) : Action()
+    data class Redirect(val path: String): Action()
 }
 
 suspend fun dispatch(mstate: MState, action: Action) {
@@ -194,6 +213,9 @@ suspend fun dispatch(mstate: MState, action: Action) {
             nextState.selectedRoom = action.room
             mstate.value = nextState
         }
-
+        is Action.Redirect -> {
+            window.history.pushState(null, "", action.path)
+            window.dispatchEvent(Event("popstate"))
+        }
     }
 }

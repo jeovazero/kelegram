@@ -1,170 +1,97 @@
 package kelegram.client
 
 import androidx.compose.runtime.*
-import kelegram.client.*
-import kelegram.client.State
 import kelegram.client.pages.LoadingPage
 import kelegram.client.pages.MainPage
 import kelegram.client.pages.LoginPage
+import kelegram.client.pages.SignupPage
 import kelegram.client.ui.AppWrapper
 import kelegram.client.ui.ButtonStyle
 import kelegram.client.ui.SpacingStyle
+import kotlinx.browser.window
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.renderComposable
 import org.w3c.dom.WebSocket
+import org.w3c.dom.Window
+import org.w3c.dom.events.Event
 
-/*
-val mainScope = MainScope()
-
-
-@Composable
-fun RoomCreation(state: MState) {
-    Stack {
-        Text("Create a room")
-        Input(type = InputType.Text,attrs = {
-            name("roomname")
-        })
-        Button(attrs = {
-            onClick {
-                mainScope.launch {
-                    createRoom()
-                    state.value = state.value.copy(screen = AppScreen.Main)
-                }
-            }
-        }) {
-            Text("Send")
+fun matchRoute(pattern: String, path: List<String>): Pair<Boolean, Map<String, String>?> {
+    val patterns = pattern.split("/")
+    val range = IntRange(0, patterns.size - 1)
+    val params = arrayListOf<Pair<String, String>>()
+    for (i in range) {
+        val current = patterns[i]
+        val currentPath = path.getOrElse(i, { "" })
+        if (current.startsWith(":")) {
+            console.log(current.drop(1))
+            params.add(Pair(current.drop(1), currentPath))
+        } else if (current != currentPath) {
+            return Pair(false, null)
         }
     }
+    return Pair(true, mapOf(*params.toTypedArray()))
+
 }
 
 @Composable
-fun InviteCreation(state: MState) {
-    val invite = remember { mutableStateOf("") }
-    Stack {
-        Text("Create an invite")
-        Button(attrs = {
-            onClick {
-                mainScope.launch {
-                    val room = state.value.selectedRoom
-                    if (room != null) {
-                        val value = createInvite(room.id)
-                        if (value != null) {
-                            invite.value = value
-                        }
-                    }
-                }
-            }
-        }) {
-            Text("Send")
-        }
-        Div {
-            if (invite.value.isNotEmpty()) {
-                Text("Invite: ${invite.value}")
-            }
-        }
-        Button(attrs = {
-            onClick {
-                state.value = state.value.copy(screen = AppScreen.Main)
-            }
-        }) { Text("Home") }
+fun Redirect(state: MState, path: String) {
+    LaunchedEffect(path) {
+        dispatch(state, Action.Redirect(path))
+        console.log("REDIRECT TO $path ${state.value}")
     }
 }
 
+val screenFromPath = { pathname: String ->
+    val paths = pathname.split("/")
+    val pathsTail = paths.drop(1)
+    val (isLogin, _) = matchRoute("login", pathsTail)
+    val (isSignup, _) = matchRoute("signup", pathsTail)
+    val (isApp, _) = matchRoute("app", pathsTail)
+    val (_, appInviteCtx) = matchRoute("app/invites/:inviteId", pathsTail)
 
-@Composable
-fun Rooms(state: MState) {
-    Stack {
-        Button (attrs = {
-            onClick {
-                state.value = state.value.copy(screen = AppScreen.RoomCreation)
-            }
-        }) {
-            Text("new room")
-        }
-        state.value.rooms?.forEach { room ->
-            Div (attrs = {
-                if (state.value.selectedRoom?.id == room.id) {
-                    classes(AppStylesheet.roomSelected)
-                }
-                classes(AppStylesheet.room)
-                onClick {
-                    mainScope.launch {
-                        getMessages(room.id)
-                        state.value = state.value.copy(selectedRoom = room)
-                    }
-                }
-            }) { Text(room.name) }
-        }
+    when {
+        isLogin -> Pair(AppScreen.Login, null)
+        isSignup -> Pair(AppScreen.SignUp, null)
+        isApp -> Pair(AppScreen.Main, appInviteCtx)
+        else -> Pair(AppScreen.None, null)
     }
 }
 
-
-
-@Composable
-fun Chat(state: MState, messages: List<String>) {
-    Stack {
-        Button (attrs = {
-            onClick {
-                state.value = state.value.copy(screen = AppScreen.InviteCreation)
-            }
-        }) { Text("Invite") }
-        Div { messages.forEach { Text(it) } }
-        Inline {
-            Input(type= InputType.Text, attrs = { name("msg")})
-            Button(attrs = {
-                onClick {
-                    val input = document.querySelector("input[name=msg]") as HTMLInputElement
-                    val m = MessageWS(
-                        fromUser = state.value.user?.id ?: "",
-                        toRoom = state.value.selectedRoom?.id ?: "",
-                        content = input.value
-                    )
-                    state.value.socket?.send(Json.encodeToString(m))
-                }
-            }) { Text("Send") }
-        }
-    }
-}
-
-
-@Composable
-fun Invite(state: MState, inviteState: MutableState<String>) {
-    val roomState = remember { mutableStateOf<Room?>(null) }
-    LaunchedEffect(inviteState.value) {
-        if(inviteState.value.isNotEmpty()) {
-            val room = validateInvite(inviteState.value)
-            if (room != null) {
-                roomState.value = room
-            }
-        } else {
-            roomState.value = null
-        }
-    }
-    Stack {
-        val room = roomState.value
-        if (room != null) {
-            Title("Invite accepted to the room, ${room.name}")
-        } else {
-            Title("No invite here")
-        }
-
-    }
-}
-*/
 fun main() {
     renderComposable(rootElementId = "root") {
-        val state = remember { mutableStateOf(State(screen=AppScreen.Loading)) }
+        val pathname = window.location.pathname
+        val state = remember {
+            val (screen, params) = screenFromPath(pathname)
+            mutableStateOf(State(screen = screen, routeParams = params))
+        }
+        LaunchedEffect(pathname) {
+            val (screen, params) = screenFromPath(pathname)
+            state.value = state.value.copy(screen = screen, routeParams = params)
+            console.log("MAP $pathname $params")
+        }
         val user = state.value.user
-        console.log(state.value.toString())
+        console.log("STATE ${state.value.screen} $pathname $user")
 
         LaunchedEffect(user) {
             if (user != null) {
-                val nextState = state.value.copy(screen = AppScreen.Main)
+                console.log("USER OK")
                 if (state.value.socket == null) {
                     val socket = WebSocket(url = "ws://localhost:8000/kek")
-                    nextState.socket = socket
+                    state.value.socket = socket
                 }
-                state.value = nextState
+            }
+        }
+        DisposableEffect(state) {
+            val listener = { e: Event ->
+                val pathname1 = (e.target.asDynamic() as Window).location.pathname
+                val (screen, _) = screenFromPath(pathname1)
+                console.log("pop $pathname1 $screen")
+                state.value = state.value.copy(screen = screen)
+            }
+            window.addEventListener("popstate", listener)
+
+            onDispose {
+                window.removeEventListener("popstate", listener)
             }
         }
 
@@ -173,10 +100,12 @@ fun main() {
         Style(ButtonStyle)
         Style(SpacingStyle)
         AppWrapper {
-            when(state.value.screen) {
+            when (state.value.screen) {
                 AppScreen.Loading -> LoadingPage(state)
-                AppScreen.SignUp -> LoginPage(state)
+                AppScreen.Login -> LoginPage(state)
+                AppScreen.SignUp -> SignupPage(state)
                 AppScreen.Main -> MainPage(state)
+                else -> Redirect(state, "/app")
             }
         }
     }

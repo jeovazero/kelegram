@@ -317,28 +317,33 @@ fun MainPage(state: MState) {
     val msg = remember { mutableStateListOf<MessageInfo>() }
     val membersState = remember { mutableStateListOf<UserInfo>() }
     val scope = rememberCoroutineScope()
+
+    val user = state.value.user
+    val rooms = state.value.rooms ?: listOf()
+    val selectedRoom = state.value.selectedRoom
+    val inviteId = state.value.routeParams?.get("inviteId")
+    console.log("$inviteId")
+    LaunchedEffect(user) {
+        if(user == null) {
+            dispatch(state, Action.DefineMe)
+        }
+    }
     LaunchedEffect(Unit) {
         dispatch(state, Action.GetRooms)
     }
-    val hash = window.location.hash
-    console.log(hash)
     val inviteState = remember { mutableStateOf<InviteInfo?>(null) }
     val inviteLink = remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(hash) {
-        val paths = hash.split("/")
-        if (paths.size >= 3) {
-            console.log(paths)
-            if (paths[0] == "#" && paths[1] == "invites") {
-                val result = getInvite(paths[2])
-                console.log("INMVITTT")
-                if (result != null) {
-                    inviteState.value = result
-                    modalSelectState.value = ModalSelect.AcceptInvite
-                } else {
-                    console.log("Somenthing wrong, I can feel it")
-                    window.location.replace("")
-                }
+    LaunchedEffect(inviteId) {
+        if(inviteId != null) {
+            val result = getInvite(inviteId)
+            console.log("INMVITTT $inviteId")
+            if (result != null) {
+                inviteState.value = result
+                modalSelectState.value = ModalSelect.AcceptInvite
+            } else {
+                console.log("Somenthing wrong, I can feel it")
+                dispatch(state, Action.Redirect("/app"))
             }
         }
     }
@@ -352,9 +357,6 @@ fun MainPage(state: MState) {
             onclose = { print("close:" + it.type) }
         }
     }
-    val user = state.value.user
-    val rooms = state.value.rooms ?: listOf()
-    val selectedRoom = state.value.selectedRoom
     Stack(className = MainStylesheet.wrapper) {
         Header(user?.nickname)
         Div(attrs = { classes(MainStylesheet.box) }) {

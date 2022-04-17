@@ -72,32 +72,6 @@ object SignUpStylesheet : StyleSheet() {
     }
 }
 
-@Composable
-fun RegisterForm(mstate: MState) {
-    val scope = rememberCoroutineScope()
-    Div {
-        Stack {
-            Input(type = InputType.Text,attrs = {
-                placeholder("Your name...")
-                classes(SignUpStylesheet.input)
-                name("nickname")
-            })
-        }
-        Button(
-            fullWidth = true,
-            onClick = {
-                val nickname =
-                    document.querySelector("input[name=nickname]") as HTMLInputElement
-                scope.launch {
-                    dispatch(mstate, Action.CreateAccount(nickname.value))
-                }
-            }
-        ) {
-            Text("Sign Up")
-        }
-    }
-}
-
 val windowFeatures = "popup"
 
 @Composable
@@ -158,10 +132,6 @@ fun LoginPage(mstate: MState) {
                     }
                 }
             }
-        }
-        RegisterForm(mstate)
-        Button(fullWidth = true) {
-            Text("Random")
         }
     }
 }
