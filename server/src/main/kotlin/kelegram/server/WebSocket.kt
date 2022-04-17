@@ -37,7 +37,6 @@ fun webSocket() = websockets(
         val session = runBlocking {
             sessionId?.let { s -> UserDomain.getSession(s) }
         }
-        println("SESSION")
         if (session == null) {
             ws.close(
                 WsStatus(REFUSE.code,"Not authorized")
@@ -46,6 +45,8 @@ fun webSocket() = websockets(
             val uid = session.userId
             runBlocking {
                 WSConnection.setRooms(ws, uid)
+                println("\u001B[32m[WS]: CONNECTING $uid")
+                println("\u001B[0m")
             }
             ws.onMessage {
                 try {
@@ -67,8 +68,6 @@ fun webSocket() = websockets(
                         MessageDomain.create(msgWs)
                         UserDomain.getById(msg.fromUser)
                     }
-                    println("\u001B[32m$user")
-                    println("\u001B[0m")
                     if (user != null) {
                         val msgToSend = MessageInfo(
                             msg.content,
@@ -77,6 +76,13 @@ fun webSocket() = websockets(
                             id,
                             msgWs.createdAt
                         )
+                        // TODO: verify permission to send a msg to a room
+                        // naive solution, set all rooms again
+                        // this case occurs when a user accepts an invitation and enters a new room
+                        if (roomConnections.get(msg.toRoom)?.contains(user.id) != true) {
+                           WSConnection.setRoom(msg.toRoom, user.id)
+                        }
+
                         val msgText = Json.encodeToString(msgToSend)
                         WSConnection.sendToRoom(msg.toRoom, msgText)
                     }
@@ -90,6 +96,12 @@ fun webSocket() = websockets(
                             "Client didn't learned nothing"
                         )
                     )
+                }
+                ws.onClose { status ->
+                    runBlocking {
+                        WSConnection.removeAll(uid)
+                        println("CLOSE ${status.description} $uid")
+                    }
                 }
             }
         }

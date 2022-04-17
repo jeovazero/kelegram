@@ -31,6 +31,7 @@ val invites: HttpHandler = { req ->
         val inviteId = req.path("id")
         if (uid != null && inviteId != null) {
             val invite = InviteDomain.getInfo(inviteId)
+            // TODO: remove invite
             print(invite)
             if (invite != null && invite.ownerId != uid) {
                 inviteInfoLens(invite, Response(OK))
