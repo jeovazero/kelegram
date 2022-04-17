@@ -10,6 +10,9 @@ import kelegram.client.ui.ButtonStyle
 import kelegram.client.ui.SpacingStyle
 import kotlinx.browser.window
 import org.jetbrains.compose.web.css.*
+import org.jetbrains.compose.web.dom.Div
+import org.jetbrains.compose.web.dom.Span
+import org.jetbrains.compose.web.dom.Text
 import org.jetbrains.compose.web.renderComposable
 import org.w3c.dom.WebSocket
 import org.w3c.dom.Window
@@ -52,6 +55,25 @@ val screenFromPath = { pathname: String ->
         isSignup -> Pair(AppScreen.SignUp, null)
         isApp -> Pair(AppScreen.Main, appInviteCtx)
         else -> Pair(AppScreen.None, null)
+    }
+}
+
+@Composable
+fun DevTag() {
+    Div(attrs = {
+        style {
+            position(Position.Fixed)
+            right(-6.cssRem)
+            top(2.cssRem)
+            property("rotate", "45deg")
+            color(Color("#ffef69"))
+            padding(5.px, 7.cssRem)
+            backgroundColor(Color("#000"))
+            property("z-index", 100);
+            fontWeight("bold")
+        }
+    }) {
+        Span{ Text("ALPHA") }
     }
 }
 
@@ -106,6 +128,7 @@ fun main() {
                 AppScreen.Main -> MainPage(state)
                 else -> Redirect(state, "/app")
             }
+            DevTag()
         }
     }
 }

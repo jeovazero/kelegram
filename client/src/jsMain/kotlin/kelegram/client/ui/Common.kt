@@ -12,6 +12,7 @@ object CommonStylesheet : StyleSheet() {
         boxSizing("border-box")
         justifyContent(JustifyContent.Center)
         overflow("auto")
+        position(Position.Relative)
     }
 }
 
