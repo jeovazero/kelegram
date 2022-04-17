@@ -2,27 +2,23 @@ package kelegram.client.modals
 
 import androidx.compose.runtime.Composable
 import kelegram.client.ui.Variant
-import kelegram.common.InviteInfo
 import org.jetbrains.compose.web.dom.P
 import org.jetbrains.compose.web.dom.Text
 
 @Composable
-fun AcceptInviteModal(
-    invite: InviteInfo,
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit,
+fun DisconnectedModal(
+    onCancel: () -> Unit
 ) {
     Modal(
-        title = "Yay!!! An invite :)",
+        title = "Sadge. :(",
         content = {
             P {
-                Text("You were invited by \"${invite.ownerName}\" to the \"${invite.roomName}\" Room")
+                Text("The connection with the server was lost. Try again later.")
             }
         },
         onClose = onCancel,
         actions = listOf(
-            ModalAction("Let's GOOOOOO", onClick = onConfirm),
-            ModalAction("Not today",
+            ModalAction("Okay",
                 onClick = {
                     onCancel()
                 },

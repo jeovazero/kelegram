@@ -4,11 +4,11 @@ import androidx.compose.runtime.*
 import kelegram.client.*
 import kelegram.client.modals.AcceptInviteModal
 import kelegram.client.modals.CreateInviteModal
+import kelegram.client.modals.DisconnectedModal
 import kelegram.client.tokens.Token
 import kelegram.client.ui.*
 import kelegram.common.*
 import kotlinx.browser.document
-import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -17,23 +17,29 @@ import org.jetbrains.compose.web.attributes.name
 import org.jetbrains.compose.web.attributes.placeholder
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
+import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLInputElement
 
 object MainStylesheet : StyleSheet() {
     val wrapper by style {
-        marginTop(2.cssRem)
+        marginTop(16.px)
+        property("height", "calc(100% - 32px)")
+        height(CSSCalcValue(100.percent.minus(32.px)))
     }
     val box by style { // container is a class
-        padding(1.5.cssRem)
+        padding(0.5.cssRem, 1.cssRem)
         backgroundColor(Token.pallete.primaryText)
         alignSelf(AlignSelf.Center)
         display(DisplayStyle.Flex)
         textAlign("left")
         justifyContent(JustifyContent.Center)
         borderRadius(0.px, 0.px, 16.px, 16.px)
+        flex(1)
+        boxSizing("border-box")
+        property("height", "calc(100% - 56px - 2rem)")
     }
     val headerBox by style {
-        padding(1.cssRem, 2.cssRem)
+        padding(1.cssRem, 1.5.cssRem)
         display(DisplayStyle.Flex)
         justifyContent(JustifyContent.SpaceBetween)
         alignItems(AlignItems.Center)
@@ -47,12 +53,11 @@ object MainStylesheet : StyleSheet() {
     }
     val list by style {
         width(128.px)
-        padding(1.cssRem)
-        paddingTop(0.px)
+        padding(0.px, 0.5.cssRem)
     }
     val listHeader by style {
         alignItems(AlignItems.Center)
-        paddingTop(1.cssRem)
+        paddingTop(0.5.cssRem)
         paddingBottom(1.cssRem)
         child(self, type("div")) style {
             marginRight(8.px)
@@ -104,24 +109,29 @@ object MainStylesheet : StyleSheet() {
     }
     val user by style {
         fontSize(1.5.cssRem)
-        paddingTop(1.5.cssRem)
-        paddingBottom(1.5.cssRem)
         color(AppCSSVariables.neutralMedium.value())
     }
     val chat by style {
         width(512.px)
-        padding(1.cssRem)
+        padding(0.5.cssRem)
         paddingTop(0.px)
+        paddingBottom(16.px)
+        height(100.percent)
+        boxSizing("border-box")
+    }
+    val chatWrapper by style {
+        height(100.percent)
     }
     val messages by style {
         backgroundColor(AppCSSVariables.neutralLight.value())
         width(100.percent)
-        height(512.px)
         boxSizing("border-box")
         padding(1.5.cssRem)
         borderRadius(16.px)
         marginBottom(1.cssRem)
         overflow("auto")
+        minHeight(240.px)
+        height(100.percent)
     }
     val input by style {
         width(100.percent)
@@ -134,6 +144,15 @@ object MainStylesheet : StyleSheet() {
             style(LineStyle.None)
         }
         marginRight(1.cssRem)
+    }
+    val headerUserWrapper by style {
+        alignItems(AlignItems.Center)
+        maxWidth(300.px)
+    }
+    val truncateText by style {
+        property("text-overflow", "ellipsis")
+        overflow("hidden")
+        property("white-space", "no-wrap")
     }
 }
 
@@ -158,19 +177,20 @@ object BaloonStyle : StyleSheet() {
         padding(0.75.cssRem)
         color(Color.black)
         backgroundColor(hsl(184, 82, 85))
-        property("word-break","break-all")
+        property("word-break", "break-all")
     }
 }
 
 @Composable
-fun MessageBaloon(message: String, nickname: String, isOwn: Boolean = false) {
+fun MessageBaloon(message: String, nickname: String?, isOwn: Boolean) {
+    console.log(message,nickname,isOwn)
     Div(attrs = {
         classes(BaloonStyle.wrapper)
         if (isOwn) {
             classes(BaloonStyle.isOwn)
         }
     }) {
-        if (!isOwn) {
+        if (nickname != null) {
             Div(attrs = {
                 classes(BaloonStyle.username)
             }) {
@@ -187,10 +207,7 @@ fun MessageBaloon(message: String, nickname: String, isOwn: Boolean = false) {
 
 
 enum class ModalSelect {
-    CreateRoom,
-    AcceptInvite,
-    CreateInvite,
-    None
+    CreateRoom, AcceptInvite, CreateInvite, Disconnect, None
 }
 
 typealias ModalSelectState = MutableState<ModalSelect>
@@ -215,8 +232,9 @@ fun Rooms(
             Stack(className = MainStylesheet.listBody) {
                 rooms.forEach { room ->
                     Div(attrs = {
-                        classes(MainStylesheet.listItem,
-                            MainStylesheet.roomItem)
+                        classes(
+                            MainStylesheet.listItem, MainStylesheet.roomItem
+                        )
                         if (room.id == selectedRoom?.id) {
                             classes(MainStylesheet.roomSeleted)
                         }
@@ -244,69 +262,111 @@ fun Members(modalSelectState: ModalSelectState, currentUser: User, members: List
     }
     Stack(className = MainStylesheet.listBody) {
         members.forEach { member ->
-            Div (attrs = {
-                classes(MainStylesheet.listItem,MainStylesheet.memberItem)
+            Div(attrs = {
+                classes(MainStylesheet.listItem, MainStylesheet.memberItem)
                 if (member.id == currentUser.id) {
                     classes(MainStylesheet.currentMember)
                 }
             }) {
-                Span{ Text(member.nickname)}
+                Span { Text(member.nickname) }
             }
         }
     }
 }
 
 @Composable
-fun Header(username: String?) {
+fun Header(username: String?, avatar: String?) {
     Div(attrs = { classes(MainStylesheet.headerBox) }) {
         Logo()
         if (username != null) {
-            H3(attrs = { classes(MainStylesheet.user) }) { Text(username) }
+            Inline(className = MainStylesheet.headerUserWrapper) {
+                if (avatar != null) {
+                    Img(avatar, "avatar", attrs = {
+                        style {
+                            width(32.px)
+                            height(32.px)
+                            marginRight(8.px)
+                            borderRadius(50.percent)
+                        }
+                    })
+                }
+                H3(attrs = { classes(MainStylesheet.user, MainStylesheet.truncateText) }) {
+                    Text(username)
+                }
+            }
         }
     }
 }
 
+data class MessageBalloonInfo(val isOwn: Boolean, val author: String?, val content: String)
+
+fun List<MessageInfo>.toMessageBalloonInfo(userId: String) =
+    this.mapIndexed { i, info ->
+        val isOwn = info.user.id == userId
+        val showAuthor = if (i != 0) {
+            !isOwn && this[i - 1].user.id != info.user.id
+        } else {
+            !isOwn
+        }
+        val author = if (showAuthor) info.user.nickname else null
+        MessageBalloonInfo(isOwn, author, info.content)
+    }
+
 @Composable
 fun Chat(name: String, messages: List<MessageInfo>, userId: String?, state: MState) {
-
-        Stack {
-            Div(attrs = { classes(MainStylesheet.listHeader) }) {
-                H3(attrs = { classes(MainStylesheet.title) }) {
-                    Text(name)
-                }
-            }
-            Div(attrs = {
-                classes(MainStylesheet.messages)
-            }) {
-                Stack {
-                    messages.forEach { message ->
-                        MessageBaloon(message.content,
-                            message.user.nickname, message.user.id == userId)
-                    }
-                }
-            }
-            Inline {
-                Input(type = InputType.Text, attrs = {
-                    placeholder("Say hello...")
-                    classes(MainStylesheet.input)
-                    name("newmessage")
-                })
-                Button(
-                    onClick = {
-                        val input =
-                            document.querySelector("input[name=newmessage]") as HTMLInputElement
-                        val m = NewMessage(
-                            fromUser = state.value.user?.id ?: "",
-                            toRoom = state.value.selectedRoom?.id
-                                ?: "",
-                            content = input.value
-                        )
-                        state.value.socket?.send(Json.encodeToString(
-                            m))
-                    }
-                ) { Text("Send") }
+    val messagesWrapperScrollable = remember{ mutableStateOf<HTMLDivElement?>(null) }
+    val ref = messagesWrapperScrollable.value
+    LaunchedEffect(messages.size, ref) {
+        if (ref != null) {
+            console.log(ref)
+            ref.scrollTop = ref.scrollHeight.toDouble()
+        }
+    }
+    Stack(className = MainStylesheet.chatWrapper) {
+        Div(attrs = { classes(MainStylesheet.listHeader) }) {
+            H3(attrs = { classes(MainStylesheet.title) }) {
+                Text(name)
             }
         }
+        Div(attrs = {
+            classes(MainStylesheet.messages)
+            ref {
+               messagesWrapperScrollable.value = it
+               onDispose {messagesWrapperScrollable.value = null}
+           }
+        }) {
+            Stack {
+                if (userId != null) {
+                    messages.toMessageBalloonInfo(userId).forEach { message ->
+                        MessageBaloon(
+                            message.content, message.author, message.isOwn
+                        )
+                    }
+                }
+            }
+        }
+        Inline {
+            Input(type = InputType.Text, attrs = {
+                placeholder("Say hello...")
+                classes(MainStylesheet.input)
+                name("newmessage")
+            })
+            Button(onClick = {
+                val input = document.querySelector("input[name=newmessage]") as HTMLInputElement
+                val m = NewMessage(
+                    fromUser = state.value.user?.id ?: "",
+                    toRoom = state.value.selectedRoom?.id ?: "",
+                    content = input.value
+                )
+                state.value.socket?.send(
+                    Json.encodeToString(
+                        m
+                    )
+                )
+                input.value = ""
+            }) { Text("Send") }
+        }
+    }
 }
 
 @Composable
@@ -322,9 +382,9 @@ fun MainPage(state: MState) {
     val rooms = state.value.rooms ?: listOf()
     val selectedRoom = state.value.selectedRoom
     val inviteId = state.value.routeParams?.get("inviteId")
-    console.log("$inviteId")
+    console.log("invite: $inviteId")
     LaunchedEffect(user) {
-        if(user == null) {
+        if (user == null) {
             dispatch(state, Action.DefineMe)
         }
     }
@@ -335,7 +395,7 @@ fun MainPage(state: MState) {
     val inviteLink = remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(inviteId) {
-        if(inviteId != null) {
+        if (inviteId != null) {
             val result = getInvite(inviteId)
             console.log("INMVITTT $inviteId")
             if (result != null) {
@@ -353,46 +413,47 @@ fun MainPage(state: MState) {
                 console.log(it.data)
                 msg.add(Json.decodeFromString(it.data as String))
             }
-            onopen = { print("Open:" + it.type) }
-            onclose = { print("close:" + it.type) }
+            onopen = { console.log("Open:" + it.type) }
+            onclose = {
+                modalSelectState.value = ModalSelect.Disconnect
+                Unit
+            }
         }
     }
     Stack(className = MainStylesheet.wrapper) {
-        Header(user?.nickname)
+        Header(user?.nickname, user?.avatarUrl)
         Div(attrs = { classes(MainStylesheet.box) }) {
             Inline {
-                Rooms(modalSelectState,
-                    rooms,
-                    selectedRoom,
-                    onClick = { room: Room ->
-                        scope.launch {
-                            console.log("GET messages ${room.id}")
-                            val list = getMessages(room.id)
-                            if (list != null) {
-                                msg.clear()
-                                msg.addAll(list)
-                            }
-                            state.value = state.value.copy(selectedRoom = room)
-                            console.log("set rooms")
+                Rooms(modalSelectState, rooms, selectedRoom, onClick = { room: Room ->
+                    scope.launch {
+                        console.log("GET messages ${room.id}")
+                        val list = getMessages(room.id)
+                        if (list != null) {
+                            msg.clear()
+                            msg.addAll(list)
+                        } else {
+                            msg.clear()
                         }
-                        scope.launch {
-                            console.log("GET members ${room.id}")
-                            val list = getMembers(room.id)
-                            if (list != null) {
-                                membersState.clear()
-                                membersState.addAll(list)
-                            }
-                            console.log("set members")
+                        state.value = state.value.copy(selectedRoom = room)
+                        console.log("set rooms")
+                    }
+                    scope.launch {
+                        console.log("GET members ${room.id}")
+                        val list = getMembers(room.id)
+                        if (list != null) {
+                            membersState.clear()
+                            membersState.addAll(list)
                         }
-                    })
+                        console.log("set members")
+                    }
+                })
                 Div(attrs = { classes(MainStylesheet.chat) }) {
                     if (selectedRoom != null) {
-                        Chat(selectedRoom.name,
-                            messages = msg,
-                            userId = user?.id,
-                            state)
+                        Chat(
+                            selectedRoom.name, messages = msg, userId = user?.id, state
+                        )
                     } else {
-                        Div { Text("Select a room") }
+                        Div { P { Text("Select a room") } }
                     }
                 }
                 Div(attrs = { classes(MainStylesheet.list) }) {
@@ -403,6 +464,7 @@ fun MainPage(state: MState) {
             }
         }
     }
+
     when (modalSelectState.value) {
         ModalSelect.CreateRoom -> NewRoomModal(onCancel = {
             modalSelectState.value = ModalSelect.None
@@ -427,11 +489,24 @@ fun MainPage(state: MState) {
             if (invite != null) {
                 AcceptInviteModal(invite, onCancel = {
                     modalSelectState.value = ModalSelect.None
-                    window.location.replace("")
+                    scope.launch {
+                        dispatch(state, Action.Redirect("/app"))
+                    }
                 }, onConfirm = {
-                    scope.launch { validateInvite(invite.id) }
+                    scope.launch {
+                        val r = validateInvite(invite.id)
+                        if (r != null) {
+                            modalSelectState.value = ModalSelect.None
+                            dispatch(state, Action.GetRooms)
+                        } else {
+                            // TODO: error
+                        }
+                    }
                 })
             }
+        }
+        ModalSelect.Disconnect -> DisconnectedModal {
+            modalSelectState.value = ModalSelect.None
         }
     }
 }

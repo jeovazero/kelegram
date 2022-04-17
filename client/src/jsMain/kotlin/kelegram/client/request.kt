@@ -1,6 +1,5 @@
 package kelegram.client
 
-import androidx.compose.runtime.setValue
 import kelegram.common.*
 import kotlinx.browser.window
 import kotlinx.coroutines.await
@@ -160,7 +159,6 @@ suspend fun defineMe(mstate: MState) {
     console.log("USER $user")
     if (user != null) {
         mstate.value = mstate.value.copy(user = user)
-        dispatch(mstate,Action.Redirect("/app"))
     } else {
         mstate.value = mstate.value.copy(user = null)
         dispatch(mstate,Action.Redirect("/login"))
@@ -209,6 +207,8 @@ suspend fun dispatch(mstate: MState, action: Action) {
             if (list != null) {
                 nextState.messages.clear()
                 nextState.messages.addAll(list)
+            } else {
+                nextState.messages.clear()
             }
             nextState.selectedRoom = action.room
             mstate.value = nextState

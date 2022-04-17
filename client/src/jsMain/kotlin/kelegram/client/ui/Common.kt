@@ -11,6 +11,7 @@ object CommonStylesheet : StyleSheet() {
         height(100.vh)
         boxSizing("border-box")
         justifyContent(JustifyContent.Center)
+        overflow("auto")
     }
 }
 

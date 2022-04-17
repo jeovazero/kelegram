@@ -7,21 +7,13 @@ import kelegram.client.ui.Button
 import kelegram.client.ui.Inline
 import kelegram.client.ui.Logo
 import kelegram.client.ui.Stack
-import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.web.attributes.InputType
-import org.jetbrains.compose.web.attributes.name
-import org.jetbrains.compose.web.attributes.placeholder
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.H3
-import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Text
-import org.w3c.dom.HTMLInputElement
-import org.w3c.dom.Window
 import org.w3c.dom.url.URL
-import org.w3c.dom.url.URLSearchParams
 
 object SignUpStylesheet : StyleSheet() {
     val wrapper by style {
@@ -75,7 +67,7 @@ object SignUpStylesheet : StyleSheet() {
 val windowFeatures = "popup"
 
 @Composable
-fun OAuth(url: String, onAuth: (String) -> Unit, content:  @Composable () -> Unit) {
+fun OAuth(url: String, onAuth: () -> Unit, content:  @Composable () -> Unit) {
      fun pop() {
         try {
             val popup = window.open(url, "oauth", windowFeatures)
@@ -83,9 +75,9 @@ fun OAuth(url: String, onAuth: (String) -> Unit, content:  @Composable () -> Uni
             if (popup != null) {
                 timer = window.setInterval({
                     val url = URL(popup.location.href)
-                    val token = url.searchParams.get("id")
-                    if (token != null) {
-                        onAuth(token)
+                    val path = url.pathname
+                    if (path == "/app") {
+                        onAuth()
                         popup.close()
                         window.clearInterval(timer)
                     }

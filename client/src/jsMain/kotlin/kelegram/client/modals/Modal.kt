@@ -24,11 +24,15 @@ object ModalStylesheet : StyleSheet() {
         property("z-index", "2")
     }
     val content by style { // container is a class
-        padding(3.cssRem)
+        padding(2.cssRem)
         backgroundColor(Token.pallete.neutralLighten)
         display(DisplayStyle.Flex)
         flexDirection(FlexDirection.Column)
         borderRadius(16.px)
+    }
+    val contentWrapper by style {
+        padding(0.5.cssRem, 0.px)
+        fontSize(1.2.cssRem)
     }
     val input by style {
         width(342.px)
@@ -77,7 +81,11 @@ fun Modal(
             }
         }) {
             H3(attrs = { classes(ModalStylesheet.title) }) { Text(title) }
-            content()
+            Div(attrs = {
+                classes(ModalStylesheet.contentWrapper)
+            }) {
+                content()
+            }
             Stack(spacing = Spacing.Small) {
                 actions.forEach { action ->
                     Button(fullWidth = false,

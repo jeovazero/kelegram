@@ -2,6 +2,7 @@ package kelegram.client.modals
 
 import androidx.compose.runtime.*
 import kelegram.client.ui.Variant
+import kotlinx.browser.window
 import org.jetbrains.compose.web.dom.*
 import org.jetbrains.compose.web.attributes.*
 
@@ -10,24 +11,27 @@ fun CreateInviteModal(onConfirm: () -> Unit, onCancel: () -> Unit, inviteLink: S
     Modal(
         title = "Create Invite",
         content = {
-            Text("Creating an invite to the selected room")
+            Span { Text("Create an invite to the selected room") }
             if (inviteLink != null) {
-                Text("Invite created:")
-                A (attrs={
-                    href("#$inviteLink")
+                P { Text("Copy the invite:") }
+                A(attrs = {
+                    href("/app$inviteLink")
                 }) {
-                    Text("Invite")
+                    Text("${window.location.host}/app$inviteLink")
                 }
             }
+
         },
         onClose = onCancel,
         actions = listOf(
             ModalAction("Create Invite", onClick = {
                 onConfirm()
             }),
-            ModalAction("Nevermind",
+            ModalAction(
+                "Nevermind",
                 onClick = onCancel,
-                variant = Variant.Neutral),
+                variant = Variant.Neutral
+            ),
         )
     )
 }

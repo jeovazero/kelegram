@@ -23,7 +23,6 @@ fun matchRoute(pattern: String, path: List<String>): Pair<Boolean, Map<String, S
         val current = patterns[i]
         val currentPath = path.getOrElse(i, { "" })
         if (current.startsWith(":")) {
-            console.log(current.drop(1))
             params.add(Pair(current.drop(1), currentPath))
         } else if (current != currentPath) {
             return Pair(false, null)
@@ -37,7 +36,6 @@ fun matchRoute(pattern: String, path: List<String>): Pair<Boolean, Map<String, S
 fun Redirect(state: MState, path: String) {
     LaunchedEffect(path) {
         dispatch(state, Action.Redirect(path))
-        console.log("REDIRECT TO $path ${state.value}")
     }
 }
 
@@ -64,17 +62,18 @@ fun main() {
             val (screen, params) = screenFromPath(pathname)
             mutableStateOf(State(screen = screen, routeParams = params))
         }
+        val user = state.value.user
+
         LaunchedEffect(pathname) {
             val (screen, params) = screenFromPath(pathname)
             state.value = state.value.copy(screen = screen, routeParams = params)
-            console.log("MAP $pathname $params")
         }
-        val user = state.value.user
-        console.log("STATE ${state.value.screen} $pathname $user")
-
         LaunchedEffect(user) {
             if (user != null) {
                 console.log("USER OK")
+                if (state.value.screen != AppScreen.Main) {
+                    dispatch(state, Action.Redirect("/app"))
+                }
                 if (state.value.socket == null) {
                     val socket = WebSocket(url = "ws://localhost:8000/kek")
                     state.value.socket = socket
