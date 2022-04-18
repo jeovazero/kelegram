@@ -13,4 +13,8 @@ object SessionData {
     suspend fun get(id: String): Session? {
         return sessionCol.findOne(Session::id eq id)
     }
+
+    suspend fun remove(id: String) {
+        sessionCol.deleteOne(Session :: id eq id)
+    }
 }

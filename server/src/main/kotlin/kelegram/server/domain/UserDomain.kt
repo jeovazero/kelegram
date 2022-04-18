@@ -5,6 +5,7 @@ import kelegram.common.User
 import kelegram.server.model.Session
 import kelegram.server.data.SessionData
 import kelegram.server.data.UserData
+import java.time.LocalDateTime
 import java.util.*
 
 object UserDomain {
@@ -23,9 +24,13 @@ object UserDomain {
 
     suspend fun createSession(user: User): Session {
         val id = UUID.randomUUID().toString()
-        val session = Session(id, user.id)
+        val session = Session(id, user.id, LocalDateTime.now().toString())
         SessionData.add(session)
         return session
+    }
+
+    suspend fun removeSession(sessionId: String) {
+        SessionData.remove(sessionId)
     }
 
     val getSession = SessionData::get
