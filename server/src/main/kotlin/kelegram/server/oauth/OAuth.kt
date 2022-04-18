@@ -3,6 +3,7 @@ package kelegram.server.oauth
 import kelegram.common.NewUser
 import kelegram.common.IdentityProvider
 import kelegram.common.Provider
+import kelegram.server.Config
 import kelegram.server.domain.UserDomain
 import kelegram.server.routes.SESSION_COOKIE
 import kotlinx.coroutines.runBlocking
@@ -47,7 +48,7 @@ fun githubOAuth(
             credentials
         ),
         oauthServerHttp,
-        Uri.of("http://localhost:8000/callback"),
+        Uri.of("${Config.oauthCallbackServer}/callback"),
         listOf("read:user", "user:email"),
         persistence
     )
@@ -56,7 +57,8 @@ fun githubOAuth(
         "/login" bind Method.GET to oAuthProvider.authFilter.then {
             println(it)
             val token = it.cookie("oauthTestAccessToken")?.value
-            if (token != null) {
+            val referer = it.header("Referer")
+            if (token != null && referer != null) {
                 val bearer = "Bearer $token"
                 val response = ApacheClient()(
                     Request(Method.GET, "https://api.github.com/user")
@@ -77,7 +79,7 @@ fun githubOAuth(
                     println("Has User $user")
                     Response(FOUND)
                         .cookie(Cookie(SESSION_COOKIE, session.id))
-                        .header("location", "http://localhost:8080?id=${session.id}")
+                        .header("location", "$referer?id=${session.id}")
                 } else {
                     if (username != null && idFromProvider != null) {
                         val newUser = runBlocking {
@@ -91,13 +93,13 @@ fun githubOAuth(
                         println("New User $user")
                         Response(FOUND)
                             .cookie(Cookie(SESSION_COOKIE, session.id))
-                            .header("location", "http://localhost:8080?id=${session.id}")
+                            .header("location", "$referer?id=${session.id}")
                     } else {
                         Response(OK).body("Hello! ${userInfo?.login}\nBio: ${userInfo?.bio}")
                     }
                 }
             } else {
-                Response(INTERNAL_SERVER_ERROR).body("there is something wrong")
+                Response(INTERNAL_SERVER_ERROR).body("there is something wrong; Referer: $referer")
             }
         }
     )

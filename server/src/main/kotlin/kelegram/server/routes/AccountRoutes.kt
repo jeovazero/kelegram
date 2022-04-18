@@ -11,6 +11,7 @@ import org.http4k.core.Status.Companion.FORBIDDEN
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
+import org.http4k.core.cookie.removeCookie
 import org.http4k.format.KotlinxSerialization.auto
 import org.http4k.routing.RoutingHttpHandler
 import org.http4k.routing.bind
@@ -58,7 +59,7 @@ val logout: HttpHandler = {req ->
             val sessionId = req.cookie(SESSION_COOKIE)?.value
             val session = sessionId?.let { s -> UserDomain.getSession(s) }
             session?.let{ s -> UserDomain.removeSession(s.id) }
-            Response(OK)
+            Response(OK).removeCookie(SESSION_COOKIE)
         } catch (err: Exception) {
             println(err.printStackTrace())
             Response(BAD_REQUEST)
