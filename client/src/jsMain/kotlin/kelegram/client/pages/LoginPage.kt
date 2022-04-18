@@ -15,7 +15,7 @@ import org.jetbrains.compose.web.dom.H3
 import org.jetbrains.compose.web.dom.Text
 import org.w3c.dom.url.URL
 
-object SignUpStylesheet : StyleSheet() {
+object LoginStylesheet : StyleSheet() {
     val wrapper by style {
         alignSelf(AlignSelf.Center)
     }
@@ -38,18 +38,6 @@ object SignUpStylesheet : StyleSheet() {
         boxSizing("border-box")
         property("z-index","1")
         borderRadius(16.px, 16.px, 0.px, 0.px)
-    }
-    val input by style {
-        width(342.px)
-        padding(1.cssRem)
-        fontSize(1.125.cssRem)
-        borderRadius(12.px)
-        backgroundColor(AppCSSVariables.neutralLight.value())
-        border {
-            width(0.px)
-            style(LineStyle.None)
-        }
-        marginBottom(1.cssRem)
     }
     val title by style {
         fontSize(1.5.cssRem)
@@ -97,7 +85,7 @@ fun OAuth(url: String, onAuth: () -> Unit, content:  @Composable () -> Unit) {
 
 @Composable
 fun LoginPage(mstate: MState) {
-    Style(SignUpStylesheet)
+    Style(LoginStylesheet)
     val scope = rememberCoroutineScope()
     val requestMe = remember { mutableStateOf(false) }
 
@@ -107,14 +95,14 @@ fun LoginPage(mstate: MState) {
         }
     }
 
-    Stack(className = SignUpStylesheet.wrapper) {
-        Div (attrs =  { classes(SignUpStylesheet.headerBox) }) {
+    Stack(className = LoginStylesheet.wrapper) {
+        Div (attrs =  { classes(LoginStylesheet.headerBox) }) {
             Logo()
         }
-        Div(attrs = { classes(SignUpStylesheet.box) }) {
-            Inline (className = SignUpStylesheet.signin) {
+        Div(attrs = { classes(LoginStylesheet.box) }) {
+            Inline (className = LoginStylesheet.signin) {
                 H3(attrs = {
-                    classes(SignUpStylesheet.title)
+                    classes(LoginStylesheet.title)
                 }){ Text("Sign In") }
                 OAuth(url = "http://localhost:8000/login", onAuth = {
                     requestMe.value = true

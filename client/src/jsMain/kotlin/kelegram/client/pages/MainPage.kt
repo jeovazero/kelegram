@@ -154,6 +154,15 @@ object MainStylesheet : StyleSheet() {
         overflow("hidden")
         property("white-space", "no-wrap")
     }
+    val logout by style {
+        fontSize(12.px)
+        textAlign("right")
+        color(AppCSSVariables.highlight.value())
+        self + hover style {
+            textDecorationLine("underline")
+            cursor("pointer")
+        }
+    }
 }
 
 object BaloonStyle : StyleSheet() {
@@ -183,7 +192,6 @@ object BaloonStyle : StyleSheet() {
 
 @Composable
 fun MessageBaloon(message: String, nickname: String?, isOwn: Boolean) {
-    console.log(message,nickname,isOwn)
     Div(attrs = {
         classes(BaloonStyle.wrapper)
         if (isOwn) {
@@ -275,24 +283,35 @@ fun Members(modalSelectState: ModalSelectState, currentUser: User, members: List
 }
 
 @Composable
-fun Header(username: String?, avatar: String?) {
+fun Header(mstate: MState, username: String?, avatar: String?) {
+    val scope = rememberCoroutineScope()
     Div(attrs = { classes(MainStylesheet.headerBox) }) {
         Logo()
         if (username != null) {
-            Inline(className = MainStylesheet.headerUserWrapper) {
-                if (avatar != null) {
-                    Img(avatar, "avatar", attrs = {
-                        style {
-                            width(32.px)
-                            height(32.px)
-                            marginRight(8.px)
-                            borderRadius(50.percent)
+            Stack {
+                Inline(className = MainStylesheet.headerUserWrapper) {
+                    if (avatar != null) {
+                        Img(avatar, "avatar", attrs = {
+                            style {
+                                width(32.px)
+                                height(32.px)
+                                marginRight(8.px)
+                                borderRadius(50.percent)
+                            }
+                        })
+                    }
+                    H3(attrs = { classes(MainStylesheet.user, MainStylesheet.truncateText) }) {
+                        Text(username)
+                    }
+                }
+                A(attrs = {
+                    classes(MainStylesheet.logout)
+                    onClick {
+                        scope.launch {
+                            dispatch(mstate, Action.Logout)
                         }
-                    })
-                }
-                H3(attrs = { classes(MainStylesheet.user, MainStylesheet.truncateText) }) {
-                    Text(username)
-                }
+                    }
+                }) { Span { Text("Logout") } }
             }
         }
     }
@@ -318,7 +337,6 @@ fun Chat(name: String, messages: List<MessageInfo>, userId: String?, state: MSta
     val ref = messagesWrapperScrollable.value
     LaunchedEffect(messages.size, ref) {
         if (ref != null) {
-            console.log(ref)
             ref.scrollTop = ref.scrollHeight.toDouble()
         }
     }
@@ -382,7 +400,6 @@ fun MainPage(state: MState) {
     val rooms = state.value.rooms ?: listOf()
     val selectedRoom = state.value.selectedRoom
     val inviteId = state.value.routeParams?.get("inviteId")
-    console.log("invite: $inviteId")
     LaunchedEffect(user) {
         if (user == null) {
             dispatch(state, Action.DefineMe)
@@ -397,12 +414,11 @@ fun MainPage(state: MState) {
     LaunchedEffect(inviteId) {
         if (inviteId != null) {
             val result = getInvite(inviteId)
-            console.log("INMVITTT $inviteId")
             if (result != null) {
                 inviteState.value = result
                 modalSelectState.value = ModalSelect.AcceptInvite
             } else {
-                console.log("Somenthing wrong, I can feel it")
+                console.error("Somenthing wrong, I can feel it")
                 dispatch(state, Action.Redirect("/app"))
             }
         }
@@ -410,10 +426,9 @@ fun MainPage(state: MState) {
     LaunchedEffect(state.value.socket) {
         state.value.socket?.apply {
             onmessage = {
-                console.log(it.data)
                 msg.add(Json.decodeFromString(it.data as String))
             }
-            onopen = { console.log("Open:" + it.type) }
+            onopen = { }
             onclose = {
                 modalSelectState.value = ModalSelect.Disconnect
                 Unit
@@ -421,12 +436,11 @@ fun MainPage(state: MState) {
         }
     }
     Stack(className = MainStylesheet.wrapper) {
-        Header(user?.nickname, user?.avatarUrl)
+        Header(state, user?.nickname, user?.avatarUrl)
         Div(attrs = { classes(MainStylesheet.box) }) {
             Inline {
                 Rooms(modalSelectState, rooms, selectedRoom, onClick = { room: Room ->
                     scope.launch {
-                        console.log("GET messages ${room.id}")
                         val list = getMessages(room.id)
                         if (list != null) {
                             msg.clear()
@@ -435,16 +449,13 @@ fun MainPage(state: MState) {
                             msg.clear()
                         }
                         state.value = state.value.copy(selectedRoom = room)
-                        console.log("set rooms")
                     }
                     scope.launch {
-                        console.log("GET members ${room.id}")
                         val list = getMembers(room.id)
                         if (list != null) {
                             membersState.clear()
                             membersState.addAll(list)
                         }
-                        console.log("set members")
                     }
                 })
                 Div(attrs = { classes(MainStylesheet.chat) }) {

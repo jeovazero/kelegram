@@ -7,7 +7,7 @@ import kelegram.server.domain.UserDomain.getById
 import kotlinx.coroutines.runBlocking
 import org.http4k.core.*
 import org.http4k.core.Status.Companion.BAD_REQUEST
-import org.http4k.core.Status.Companion.NOT_FOUND
+import org.http4k.core.Status.Companion.FORBIDDEN
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
@@ -24,17 +24,16 @@ val me: HttpHandler = { req ->
     runBlocking {
         val sessionId = req.cookie(SESSION_COOKIE)?.value
         val session = sessionId?.let { s -> UserDomain.getSession(s) }
-        println("Session: ")
         if (session != null) {
             val u = getById(session.userId)
             println("Session user: $u")
             if (u != null) {
                 userLens(u, Response(OK))
             } else {
-                Response(NOT_FOUND).body("NOT_FOUND")
+                Response(FORBIDDEN).body("FORBIDDEN")
             }
         } else {
-            Response(NOT_FOUND).body("NOT_FOUND")
+            Response(FORBIDDEN).body("FORBIDDEN")
         }
     }
 }
@@ -53,8 +52,23 @@ val account: HttpHandler = { req ->
     }
 }
 
+val logout: HttpHandler = {req ->
+    runBlocking {
+        try {
+            val sessionId = req.cookie(SESSION_COOKIE)?.value
+            val session = sessionId?.let { s -> UserDomain.getSession(s) }
+            session?.let{ s -> UserDomain.removeSession(s.id) }
+            Response(OK)
+        } catch (err: Exception) {
+            println(err.printStackTrace())
+            Response(BAD_REQUEST)
+        }
+    }
+}
+
 fun accountRoutes(): RoutingHttpHandler =
     routes(
         "/me" bind Method.GET to me,
+        "/logout" bind Method.GET to logout,
         "/account" bind Method.POST to account
     )

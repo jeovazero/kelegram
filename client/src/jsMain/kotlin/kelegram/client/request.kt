@@ -35,7 +35,7 @@ suspend fun request(
             override var credentials: RequestCredentials? =
                 RequestCredentials.Companion.INCLUDE
         }).catch {
-            console.log("$it")
+            console.error("$it")
             null
         }
     } catch (e: Error) {
@@ -66,6 +66,20 @@ suspend fun me(): User? {
     }
 
     return null
+}
+
+suspend fun logout(): Boolean {
+    val r = try {
+        request(path = "/logout")
+    } catch (e: Error) {
+        console.error("ERROR $e")
+        return false
+    }
+
+    if (r != null) {
+        return r.ok
+    }
+    return false
 }
 
 suspend fun getRooms(): List<Room>? {
@@ -126,7 +140,6 @@ suspend fun createInvite(roomId: String): String? {
         path = "/ownedrooms/$roomId/invites",
         method = "POST"
     )
-    console.log("R", r?.ok)
     if (r != null && r.ok) {
         return r.text().await()
     }
@@ -138,7 +151,6 @@ suspend fun validateInvite(inviteId: String): Room? {
         path = "/invites/$inviteId",
         method = "POST"
     )
-    console.log("R", r?.ok)
     if (r != null && r.ok) {
         val w = r.text().await()
         return Json.decodeFromString(w)
@@ -160,7 +172,6 @@ suspend fun getInvite(inviteId: String): InviteInfo? {
 
 suspend fun defineMe(mstate: MState) {
     val user = me()
-    console.log("USER $user")
     if (user != null) {
         mstate.value = mstate.value.copy(user = user)
     } else {
@@ -176,11 +187,17 @@ sealed class Action {
     object GetRooms : Action()
     data class SetRoom(val room: Room) : Action()
     data class Redirect(val path: String): Action()
+    object Logout : Action()
 }
 
 suspend fun dispatch(mstate: MState, action: Action) {
     when (action) {
         is Action.DefineMe -> defineMe(mstate)
+        is Action.Logout -> {
+            logout()
+            mstate.value = mstate.value.copy(user = null)
+            dispatch(mstate, Action.Redirect("/login"))
+        }
         is Action.CreateAccount -> {
             val result = createAccount(action.nickname)
             if (result) {

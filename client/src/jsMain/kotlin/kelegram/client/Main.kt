@@ -92,7 +92,6 @@ fun main() {
         }
         LaunchedEffect(user) {
             if (user != null) {
-                console.log("USER OK")
                 if (state.value.screen != AppScreen.Main) {
                     dispatch(state, Action.Redirect("/app"))
                 }
@@ -106,7 +105,6 @@ fun main() {
             val listener = { e: Event ->
                 val pathname1 = (e.target.asDynamic() as Window).location.pathname
                 val (screen, _) = screenFromPath(pathname1)
-                console.log("pop $pathname1 $screen")
                 state.value = state.value.copy(screen = screen)
             }
             window.addEventListener("popstate", listener)

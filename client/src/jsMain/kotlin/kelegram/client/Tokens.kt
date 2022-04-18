@@ -12,6 +12,7 @@ data class Palette(
     val secondaryPair: CSSColorValue = hsl(0, 100, 89),
     val secondaryText: CSSColorValue = hsl(0, 0, 100),
     val tertiary: CSSColorValue = hsl(112, 92, 45),
+    val highlight: CSSColorValue = hsl(309, 88, 47),
     val neutralLighten: CSSColorValue = hsl(0, 0, 100),
     val neutralLight: CSSColorValue = hsl(0, 0, 96),
     val neutralMedium: CSSColorValue = hsl(0, 0, 50),
