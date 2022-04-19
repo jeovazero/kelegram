@@ -22,6 +22,7 @@ import org.http4k.core.Status.Companion.FOUND
 import org.http4k.core.Status.Companion.INTERNAL_SERVER_ERROR
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.cookie.Cookie
+import org.http4k.core.cookie.SameSite
 
 @Serializable
 data class UserGithub(
@@ -92,7 +93,7 @@ fun githubOAuth(
                         val session = runBlocking { UserDomain.createSession(newUser) }
                         println("New User $user")
                         Response(FOUND)
-                            .cookie(Cookie(SESSION_COOKIE, session.id))
+                            .cookie(Cookie(SESSION_COOKIE, session.id, secure = true, httpOnly = true, sameSite = SameSite.None))
                             .header("location", "$referer?id=${session.id}")
                     } else {
                         Response(OK).body("Hello! ${userInfo?.login}\nBio: ${userInfo?.bio}")

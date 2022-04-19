@@ -10,6 +10,7 @@ import org.http4k.core.Status.Companion.BAD_REQUEST
 import org.http4k.core.Status.Companion.FORBIDDEN
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.cookie.Cookie
+import org.http4k.core.cookie.SameSite
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.removeCookie
 import org.http4k.format.KotlinxSerialization.auto
@@ -45,7 +46,7 @@ val account: HttpHandler = { req ->
             val newUserPayload = newUserLens.invoke(req)
             val newUser = UserDomain.create(newUserPayload)
             val session = UserDomain.createSession(newUser)
-            Response(OK).cookie(Cookie(SESSION_COOKIE, session.id)).body("Hello there ${newUser.id}")
+            Response(OK).cookie(Cookie(SESSION_COOKIE, session.id, secure = true, httpOnly = true, sameSite = SameSite.None)).body("Hello there ${newUser.id}")
         } catch (err: Exception) {
             println(err.printStackTrace())
             Response(BAD_REQUEST).body("ERROR on create account")
