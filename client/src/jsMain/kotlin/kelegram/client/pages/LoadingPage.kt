@@ -32,15 +32,7 @@ object LoadingStylesheet : StyleSheet() {
 }
 
 @Composable
-fun LoadingPage(mstate: MState) {
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        scope.launch {
-            dispatch(mstate, Action.DefineMe)
-        }
-    }
-
+fun LoadingPage() {
     Style(LoadingStylesheet)
     Div(attrs = { classes(LoadingStylesheet.wrapper) }) {
         Stack {

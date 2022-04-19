@@ -8,7 +8,6 @@ import kelegram.client.ui.Inline
 import kelegram.client.ui.Logo
 import kelegram.client.ui.Stack
 import kotlinx.browser.window
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.H3
@@ -86,13 +85,10 @@ fun OAuth(url: String, onAuth: () -> Unit, content:  @Composable () -> Unit) {
 @Composable
 fun LoginPage(mstate: MState) {
     Style(LoginStylesheet)
-    val scope = rememberCoroutineScope()
     val requestMe = remember { mutableStateOf(false) }
 
     LaunchedEffect(requestMe.value) {
-        scope.launch {
-            dispatch(mstate, Action.DefineMe)
-        }
+        dispatch(mstate, Action.DefineMe)
     }
 
     Stack(className = LoginStylesheet.wrapper) {
@@ -104,7 +100,7 @@ fun LoginPage(mstate: MState) {
                 H3(attrs = {
                     classes(LoginStylesheet.title)
                 }){ Text("Sign In") }
-                OAuth(url = "http://localhost:8000/login", onAuth = {
+                OAuth(url = "${KelegramServer.BASE}/login", onAuth = {
                     requestMe.value = true
                 }) {
                     Button (fullWidth = true) {

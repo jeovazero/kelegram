@@ -391,6 +391,7 @@ fun Chat(name: String, messages: List<MessageInfo>, userId: String?, state: MSta
 fun MainPage(state: MState) {
     Style(MainStylesheet)
     Style(BaloonStyle)
+    val loading = remember { mutableStateOf(true) }
     val modalSelectState = remember { mutableStateOf(ModalSelect.None) }
     val msg = remember { mutableStateListOf<MessageInfo>() }
     val membersState = remember { mutableStateListOf<UserInfo>() }
@@ -403,6 +404,8 @@ fun MainPage(state: MState) {
     LaunchedEffect(user) {
         if (user == null) {
             dispatch(state, Action.DefineMe)
+        } else {
+            loading.value = false
         }
     }
     LaunchedEffect(Unit) {
@@ -435,41 +438,45 @@ fun MainPage(state: MState) {
             }
         }
     }
-    Stack(className = MainStylesheet.wrapper) {
-        Header(state, user?.nickname, user?.avatarUrl)
-        Div(attrs = { classes(MainStylesheet.box) }) {
-            Inline {
-                Rooms(modalSelectState, rooms, selectedRoom, onClick = { room: Room ->
-                    scope.launch {
-                        val list = getMessages(room.id)
-                        if (list != null) {
-                            msg.clear()
-                            msg.addAll(list)
+    if (loading.value) {
+        LoadingPage()
+    } else {
+        Stack(className = MainStylesheet.wrapper) {
+            Header(state, user?.nickname, user?.avatarUrl)
+            Div(attrs = { classes(MainStylesheet.box) }) {
+                Inline {
+                    Rooms(modalSelectState, rooms, selectedRoom, onClick = { room: Room ->
+                        scope.launch {
+                            val list = getMessages(room.id)
+                            if (list != null) {
+                                msg.clear()
+                                msg.addAll(list)
+                            } else {
+                                msg.clear()
+                            }
+                            state.value = state.value.copy(selectedRoom = room)
+                        }
+                        scope.launch {
+                            val list = getMembers(room.id)
+                            if (list != null) {
+                                membersState.clear()
+                                membersState.addAll(list)
+                            }
+                        }
+                    })
+                    Div(attrs = { classes(MainStylesheet.chat) }) {
+                        if (selectedRoom != null) {
+                            Chat(
+                                selectedRoom.name, messages = msg, userId = user?.id, state
+                            )
                         } else {
-                            msg.clear()
-                        }
-                        state.value = state.value.copy(selectedRoom = room)
-                    }
-                    scope.launch {
-                        val list = getMembers(room.id)
-                        if (list != null) {
-                            membersState.clear()
-                            membersState.addAll(list)
+                            Div { P { Text("Select a room") } }
                         }
                     }
-                })
-                Div(attrs = { classes(MainStylesheet.chat) }) {
-                    if (selectedRoom != null) {
-                        Chat(
-                            selectedRoom.name, messages = msg, userId = user?.id, state
-                        )
-                    } else {
-                        Div { P { Text("Select a room") } }
-                    }
-                }
-                Div(attrs = { classes(MainStylesheet.list) }) {
-                    if (state.value.selectedRoom != null && user != null) {
-                        Members(modalSelectState, user, membersState)
+                    Div(attrs = { classes(MainStylesheet.list) }) {
+                        if (state.value.selectedRoom != null && user != null) {
+                            Members(modalSelectState, user, membersState)
+                        }
                     }
                 }
             }

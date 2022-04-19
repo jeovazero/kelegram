@@ -14,9 +14,10 @@ import kotlinx.serialization.encodeToString
 import org.w3c.dom.events.Event
 
 object KelegramServer {
-    val SERVER = js("SERVER").unsafeCast<String>()
-    val BASE = "http://$SERVER"
-    val WebSocket = "ws://$SERVER/kek"
+    val BASE = js("SERVER").unsafeCast<String>()
+    private val SERVER = BASE.split("//").component2()
+    private val s = if (SERVER.startsWith("https")) "s" else ""
+    val WebSocket = "wss://$SERVER/kek"
 }
 
 suspend fun request(

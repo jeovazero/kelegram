@@ -65,7 +65,7 @@ fun DevTag() {
             position(Position.Fixed)
             right(-6.cssRem)
             top(2.cssRem)
-            property("rotate", "45deg")
+            property("transform", "rotate(45deg)")
             color(Color("#ffef69"))
             padding(5.px, 7.cssRem)
             backgroundColor(Color("#000"))
@@ -120,7 +120,7 @@ fun main() {
         Style(SpacingStyle)
         AppWrapper {
             when (state.value.screen) {
-                AppScreen.Loading -> LoadingPage(state)
+                AppScreen.Loading -> LoadingPage()
                 AppScreen.Login -> LoginPage(state)
                 AppScreen.SignUp -> SignupPage(state)
                 AppScreen.Main -> MainPage(state)

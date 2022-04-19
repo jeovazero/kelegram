@@ -6,7 +6,7 @@ config.devServer = {
 
 const definePlugin = new webpack.DefinePlugin(
    {
-      SERVER: JSON.stringify(process.env.SERVER || "localhost:8000")
+      SERVER: JSON.stringify(process.env.SERVER || "http://localhost:8000")
    }
 )
 
