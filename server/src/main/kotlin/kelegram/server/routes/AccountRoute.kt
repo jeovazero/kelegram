@@ -4,10 +4,14 @@ import kelegram.common.NewUser
 import kelegram.common.User
 import kelegram.server.domain.UserDomain
 import kelegram.server.domain.UserDomain.getById
+import kelegram.server.utils.DecodeReq.decode
+import kelegram.server.utils.ErrorResponse
+import kelegram.server.utils.logger
 import kotlinx.coroutines.runBlocking
 import org.http4k.core.*
 import org.http4k.core.Status.Companion.BAD_REQUEST
 import org.http4k.core.Status.Companion.FORBIDDEN
+import org.http4k.core.Status.Companion.INTERNAL_SERVER_ERROR
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.SameSite
@@ -43,27 +47,30 @@ val me: HttpHandler = { req ->
 val account: HttpHandler = { req ->
     runBlocking {
         try {
-            val newUserPayload = newUserLens.invoke(req)
+            val newUserPayload =
+                req.decode(newUserLens) ?: return@runBlocking ErrorResponse.decodingFailure
             val newUser = UserDomain.create(newUserPayload)
             val session = UserDomain.createSession(newUser)
-            Response(OK).cookie(Cookie(SESSION_COOKIE, session.id, secure = true, httpOnly = true, sameSite = SameSite.None)).body("Hello there ${newUser.id}")
+            Response(OK)
+                .cookie(Cookie(SESSION_COOKIE, session.id, secure = true, httpOnly = true, sameSite = SameSite.None))
+                .body("Hello there ${newUser.id}")
         } catch (err: Exception) {
-            println(err.printStackTrace())
-            Response(BAD_REQUEST).body("ERROR on create account")
+            logger.error { "Fatal Error: ${err.message}" }
+            Response(INTERNAL_SERVER_ERROR).body("Fatal error on create account")
         }
     }
 }
 
-val logout: HttpHandler = {req ->
+val logout: HttpHandler = { req ->
     runBlocking {
         try {
             val sessionId = req.cookie(SESSION_COOKIE)?.value
             val session = sessionId?.let { s -> UserDomain.getSession(s) }
-            session?.let{ s -> UserDomain.removeSession(s.id) }
+            session?.let { s -> UserDomain.removeSession(s.id) }
             Response(OK).removeCookie(SESSION_COOKIE)
         } catch (err: Exception) {
             println(err.printStackTrace())
-            Response(BAD_REQUEST)
+            Response(INTERNAL_SERVER_ERROR)
         }
     }
 }

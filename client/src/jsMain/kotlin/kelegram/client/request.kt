@@ -17,7 +17,7 @@ object KelegramServer {
     val BASE = js("SERVER").unsafeCast<String>()
     private val SERVER = BASE.split("//").component2()
     private val s = if (SERVER.startsWith("https")) "s" else ""
-    val WebSocket = "wss://$SERVER/kek"
+    val WebSocket = "ws${s}://$SERVER/kek"
 }
 
 suspend fun request(

@@ -1,7 +1,7 @@
 package kelegram.server.routes
 
 import kelegram.common.NewRoom
-import kelegram.server.WSConnection
+import kelegram.server.websocket.WSConnection
 import kelegram.server.domain.InviteDomain
 import kelegram.server.domain.RoomDomain
 import kelegram.server.domain.UserDomain

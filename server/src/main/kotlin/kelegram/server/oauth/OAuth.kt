@@ -71,10 +71,11 @@ fun githubOAuth(
                 val avatarUrl = userInfo?.avatar_url
                 // create session or user
                 val user =
-                    if (idFromProvider != null) runBlocking {
-                        UserDomain.getByIdFromProvider(idFromProvider)
+                    idFromProvider?.let {
+                        runBlocking {
+                            UserDomain.getByIdFromProvider(idFromProvider)
+                        }
                     }
-                    else null
                 if (user != null) {
                     val session = runBlocking { UserDomain.createSession(user) }
                     println("Has User $user")

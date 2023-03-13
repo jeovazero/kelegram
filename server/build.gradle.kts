@@ -6,7 +6,7 @@ val kotlin_version: String by extra
 plugins {
     application
     kotlin("jvm")
-    kotlin("plugin.serialization") version "1.6.10"
+    kotlin("plugin.serialization") version "1.8.10"
     id("org.graalvm.buildtools.native") version "0.9.4"
     id("com.github.johnrengelman.shadow") version "7.0.0"
 }
@@ -18,7 +18,7 @@ repositories {
 
 dependencies {
     // Align versions of all Kotlin components
-    implementation(kotlin("bom"))
+    implementation(kotlin("bom:$kotlin_version"))
 
     implementation(platform("org.http4k:http4k-bom:$http4k_version"))
     implementation("org.http4k:http4k-core:$http4k_version")
@@ -30,6 +30,8 @@ dependencies {
     implementation("org.http4k:http4k-format-jackson:$http4k_version")
 
     implementation("ch.qos.logback:logback-classic:$logback_version")
+    implementation("io.github.oshai:kotlin-logging-jvm:4.0.0-beta-22")
+
     implementation("org.litote.kmongo:kmongo-coroutine-serialization:4.5.1")
     implementation("org.litote.kmongo:kmongo-id-serialization:4.5.1")
 
@@ -50,9 +52,6 @@ dependencies {
 application {
     // Define the main class for the application.
     mainClass.set("kelegram.server.AppKt")
-
-    // Dev mode
-    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=true")
 }
 
 java {

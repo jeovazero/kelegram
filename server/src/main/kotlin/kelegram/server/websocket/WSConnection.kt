@@ -1,4 +1,4 @@
-package kelegram.server
+package kelegram.server.websocket
 
 import kelegram.server.domain.UserDomain
 import org.http4k.websocket.Websocket

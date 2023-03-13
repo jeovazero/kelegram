@@ -3,14 +3,4 @@
  */
 package kelegram.server
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.assertEquals
-import io.ktor.server.testing.*
-import io.ktor.http.*
-import io.ktor.util.*
 
-class AppTest {
-    @Test fun testGetMessage() {
-        assertEquals(true,true)
-    }
-}

@@ -1,4 +1,4 @@
-package kelegram.server
+package kelegram.server.websocket
 
 import kelegram.common.Message
 import kelegram.common.MessageInfo
@@ -33,7 +33,7 @@ fun webSocket() = websockets(
         ))))
         val req = ws.upgradeRequest
         val sessionId = req.cookie(SESSION_COOKIE)?.value
-        // println("SESSION $sessionId")
+        println("SESSION $sessionId")
         val session = runBlocking {
             sessionId?.let { s -> UserDomain.getSession(s) }
         }
@@ -80,7 +80,7 @@ fun webSocket() = websockets(
                         // naive solution, set all rooms again
                         // this case occurs when a user accepts an invitation and enters a new room
                         if (roomConnections.get(msg.toRoom)?.contains(user.id) != true) {
-                           WSConnection.setRoom(msg.toRoom, user.id)
+                            WSConnection.setRoom(msg.toRoom, user.id)
                         }
 
                         val msgText = Json.encodeToString(msgToSend)

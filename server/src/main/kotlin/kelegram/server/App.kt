@@ -2,6 +2,8 @@ package kelegram.server
 
 import kelegram.server.oauth.githubOAuth
 import kelegram.server.routes.*
+import kelegram.server.utils.middlewareLogger
+import kelegram.server.websocket.webSocket
 import org.http4k.server.Netty
 import org.http4k.server.asServer
 import org.http4k.core.Credentials
@@ -57,21 +59,22 @@ val kek = """
         """.trimMargin()
 
 fun main() {
-    val oauth = githubOAuth(
-        Uri.of("https://github.com"),
-        Credentials(Config.clientId, Config.clientSecret)
-    )
     val root = "/" bind GET to {
         Response(OK).body(kek).header("Content-Type", "text/html; charset=utf-8")
     }
 
+    val oauth = githubOAuth(
+        Uri.of("https://github.com"),
+        Credentials(Config.clientId, Config.clientSecret)
+    )
     println(kek)
-    println(Config.allowedOrigins)
+    println("allowedOrigins: ${Config.allowedOrigins}")
+    println("server port: ${Config.port}")
 
     val http = ServerFilters.Cors(
         CorsPolicy(OriginPolicy.AnyOf(Config.allowedOrigins),
             headers = listOf("Content-Type","Origin"),
-            methods = listOf(GET,POST,PUT,OPTIONS),
+            methods = listOf(GET,POST,PUT,DELETE,OPTIONS),
             credentials = true
         )).then(
         routes(
@@ -85,5 +88,7 @@ fun main() {
     )
     val ws = webSocket()
 
-    PolyHandler(http, ws).asServer(Netty(Config.port)) .start()
+    val httpLog = middlewareLogger.then(http)
+
+    PolyHandler(httpLog, ws).asServer(Netty(Config.port)).start()
 }

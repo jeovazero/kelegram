@@ -36,7 +36,7 @@ kotlin {
 
 afterEvaluate {
     rootProject.extensions.configure<NodeJsRootExtension> {
-        versions.webpackCli.version = "4.9.0"
+        versions.webpackCli.version = "4.10.0"
         versions.webpackDevServer.version = "4.8.1"
     }
 }

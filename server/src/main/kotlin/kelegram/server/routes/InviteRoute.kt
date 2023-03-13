@@ -5,6 +5,7 @@ import kelegram.common.Room
 import kelegram.server.domain.InviteDomain
 import kelegram.server.domain.RoomDomain
 import kelegram.server.domain.UserDomain
+import kelegram.server.utils.UserSession
 import kotlinx.coroutines.runBlocking
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
@@ -25,10 +26,9 @@ val roomLens = Body.auto<Room>().toLens()
 
 val invites: HttpHandler = { req ->
     runBlocking {
-        val sessionId = req.cookie(SESSION_COOKIE)?.value
-        val session = sessionId?.let { s -> UserDomain.getSession(s) }
-        val uid = session?.userId
         val inviteId = req.path("id")
+        val uid = UserSession.get(req)
+
         if (uid != null && inviteId != null) {
             val invite = InviteDomain.getInfo(inviteId)
             // TODO: remove invite
@@ -46,22 +46,22 @@ val invites: HttpHandler = { req ->
 
 val createInvite: HttpHandler = { req ->
     runBlocking {
-        val sessionId = req.cookie(SESSION_COOKIE)?.value
-        val session = sessionId?.let { s -> UserDomain.getSession(s) }
-        val uid = session?.userId
         val inviteId = req.path("id")
+        val uid = UserSession.get(req)
+
         if (uid != null && inviteId != null) {
             val invite = InviteDomain.get(inviteId)
+
             if (invite != null && invite.ownerId != uid) {
                 RoomDomain.addMember(invite.roomId, uid)
                 val room = RoomDomain.get(invite.roomId,invite.ownerId)
                 if (room != null) {
                     roomLens(room, Response(OK))
                 } else {
-                    Response(BAD_REQUEST) // not sure
+                    Response(BAD_REQUEST)
                 }
             } else {
-                Response(BAD_REQUEST) // not sure
+                Response(NOT_FOUND)
             }
         } else {
             Response(NOT_FOUND)
