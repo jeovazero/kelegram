@@ -7,7 +7,7 @@ import org.http4k.filter.ResponseFilters
 
 val logger = KotlinLogging.logger {}
 
-val middlewareLogger =
+val LogHandler =
     ResponseFilters.ReportHttpTransaction { tx: HttpTransaction ->
         logger.info{ "${tx.request.uri} returned ${tx.response.status} and took ${tx.duration.toMillis()}ms" }
     }

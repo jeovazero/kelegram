@@ -2,7 +2,8 @@ package kelegram.server
 
 import kelegram.server.oauth.githubOAuth
 import kelegram.server.routes.*
-import kelegram.server.utils.middlewareLogger
+import kelegram.server.utils.FatalErrorHandler
+import kelegram.server.utils.LogHandler
 import kelegram.server.websocket.webSocket
 import org.http4k.server.Netty
 import org.http4k.server.asServer
@@ -88,7 +89,7 @@ fun main() {
     )
     val ws = webSocket()
 
-    val httpLog = middlewareLogger.then(http)
+    val httpM = FatalErrorHandler.then(LogHandler.then(http))
 
-    PolyHandler(httpLog, ws).asServer(Netty(Config.port)).start()
+    PolyHandler(httpM, ws).asServer(Netty(Config.port)).start()
 }
