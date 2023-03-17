@@ -6,6 +6,8 @@ import kelegram.common.UserInfo
 import kelegram.server.data.UserData
 import kelegram.server.domain.RoomDomain
 import kelegram.server.domain.UserDomain
+import kelegram.server.utils.ErrorResponse
+import kelegram.server.utils.UserSession.getUserId
 import kotlinx.coroutines.runBlocking
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
@@ -39,30 +41,22 @@ val rooms: HttpHandler = { req ->
 
 val roomMessages: HttpHandler = { req ->
     runBlocking {
-        val sessionId = req.cookie(SESSION_COOKIE)?.value
-        val session = sessionId?.let { s -> UserDomain.getSession(s) }
-        val rid = req.path("id")
-        if (session != null && rid != null) {
-            // TODO: verify if the user is authorized in the room
-            val msgs = RoomDomain.getMessages(rid)
-            messagesInfoLens(msgs, Response(OK))
-        } else {
-            Response(NOT_FOUND)
-        }
+        req.getUserId() ?: return@runBlocking ErrorResponse.unauthorized
+        val roomId = req.path("id") ?: return@runBlocking ErrorResponse.notFound
+
+        // TODO: verify if the user is allowed in the room
+        val messages = RoomDomain.getMessages(roomId)
+        messagesInfoLens(messages, Response(OK))
     }
 }
 val roomsMembers: HttpHandler = { req ->
     runBlocking {
-        val sessionId = req.cookie(SESSION_COOKIE)?.value
-        val session = sessionId?.let { s -> UserDomain.getSession(s) }
-        val rid = req.path("id")
-        if (session != null && rid != null) {
-            // TODO: verify if the user is authorized in the room
-            val members = RoomDomain.getMembers(rid)
-            membersInfoLens(members, Response(OK))
-        } else {
-            Response(NOT_FOUND)
-        }
+        val memberId = req.getUserId() ?: return@runBlocking ErrorResponse.unauthorized
+        val roomId = req.path("id") ?: return@runBlocking ErrorResponse.notFound
+
+        val members = RoomDomain.getMembers(roomId, memberId)
+        if (members.isEmpty()) return@runBlocking ErrorResponse.forbidden
+        membersInfoLens(members, Response(OK))
     }
 }
 
@@ -71,4 +65,4 @@ fun roomRoutes(): RoutingHttpHandler =
         "/" bind Method.GET to rooms,
         "/{id:.*}/messages" bind Method.GET to roomMessages,
         "/{id:.*}/members" bind Method.GET to roomsMembers
-)
+    )

@@ -72,12 +72,16 @@ fun main() {
     println("allowedOrigins: ${Config.allowedOrigins}")
     println("server port: ${Config.port}")
 
-    val http = ServerFilters.Cors(
-        CorsPolicy(OriginPolicy.AnyOf(Config.allowedOrigins),
-            headers = listOf("Content-Type","Origin"),
-            methods = listOf(GET,POST,PUT,DELETE,OPTIONS),
+    val cors = ServerFilters.Cors(
+        CorsPolicy(
+            OriginPolicy.AnyOf(Config.allowedOrigins),
+            headers = listOf("Content-Type", "Origin"),
+            methods = listOf(GET, POST, PUT, DELETE, OPTIONS),
             credentials = true
-        )).then(
+        )
+    )
+
+    val http =
         routes(
             inviteRoutes(),
             roomRoutes(),
@@ -86,10 +90,10 @@ fun main() {
             oauth,
             root
         )
-    )
+
     val ws = webSocket()
 
-    val httpM = FatalErrorHandler.then(LogHandler.then(http))
+    val httpM = FatalErrorHandler.then(LogHandler.then(cors.then(http)))
 
     PolyHandler(httpM, ws).asServer(Netty(Config.port)).start()
 }

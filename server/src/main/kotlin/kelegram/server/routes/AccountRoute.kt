@@ -28,17 +28,11 @@ val newUserLens = Body.auto<NewUser>().toLens()
 
 val me: HttpHandler = { req ->
     runBlocking {
-        val resp = req.getUserId()?.let {
-            val user = UserDomain.getById(it)
+        req.getUserId()?.let {
+            val user = UserDomain.getById(it) ?: return@let ErrorResponse.unauthorized
             logger.debug { "Session user: $user" }
-            if (user != null) {
-                userLens(user, Response(OK))
-            } else {
-                Response(FORBIDDEN).body("FORBIDDEN")
-            }
-        }
-
-        resp ?: Response(FORBIDDEN).body("FORBIDDEN")
+            userLens(user, Response(OK))
+        } ?: ErrorResponse.unauthorized
     }
 }
 

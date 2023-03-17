@@ -26,9 +26,10 @@ object RoomData {
         )
     }
 
-    suspend fun getMembers(roomId: String): List<UserInfo> {
+    suspend fun getMembers(roomId: String, memberId: String): List<UserInfo> {
         return roomCol.aggregate<UserInfo>(
-            match(Room::id eq roomId),
+            // TODO: review match
+            match(and(Room::id eq roomId, Room::membersIds contains memberId)),
             lookup(from = "user",
                 localField = "membersIds",
                 foreignField = "id",

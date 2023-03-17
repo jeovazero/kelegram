@@ -5,13 +5,12 @@ import kelegram.server.websocket.WSConnection
 import kelegram.server.domain.InviteDomain
 import kelegram.server.domain.RoomDomain
 import kelegram.server.domain.UserDomain
+import kelegram.server.utils.DecodeReq.decode
+import kelegram.server.utils.ErrorResponse
+import kelegram.server.utils.UserSession.getUserId
 import kotlinx.coroutines.runBlocking
 import org.http4k.core.*
-import org.http4k.core.Status.Companion.FORBIDDEN
-import org.http4k.core.Status.Companion.NOT_FOUND
 import org.http4k.core.Status.Companion.OK
-import org.http4k.core.Status.Companion.UNAUTHORIZED
-import org.http4k.core.cookie.cookie
 import org.http4k.format.KotlinxSerialization.auto
 import org.http4k.routing.RoutingHttpHandler
 import org.http4k.routing.bind
@@ -22,41 +21,25 @@ val newRoomLens = Body.auto<NewRoom>().toLens()
 
 val ownedRooms: HttpHandler = { req ->
     runBlocking {
-        val sessionId = req.cookie(SESSION_COOKIE)?.value
-        val session = sessionId?.let { s -> UserDomain.getSession(s) }
-        val newRoom = newRoomLens.invoke(req)
-        if (session != null) {
-            val user = UserDomain.getById(session.userId)
-            if (user != null) {
-                val result = RoomDomain.create(newRoom, user.id)
-                WSConnection.setRoom(result.id, user.id)
-                Response(OK).body(result.id)
-            } else {
-                Response(NOT_FOUND).body("What did you learn?")
-            }
-        } else {
-            Response(NOT_FOUND).body("What did you learn?")
-        }
+        val requesterId = req.getUserId() ?: return@runBlocking ErrorResponse.unauthorized
+        val newRoom = req.decode(newRoomLens) ?: return@runBlocking ErrorResponse.decodingFailure
+        val user = UserDomain.getById(requesterId) ?: return@runBlocking ErrorResponse.notFound
+
+        val result = RoomDomain.create(newRoom, user.id)
+        WSConnection.setRoom(result.id, user.id)
+        Response(OK).body(result.id)
     }
 }
 
 val ownedRoomsInvites: HttpHandler = { req ->
     runBlocking {
-        val sessionId = req.cookie(SESSION_COOKIE)?.value
-        val session = sessionId?.let { s -> UserDomain.getSession(s) }
-        val rid = req.path("id")
-        val uid = session?.userId
-        if (uid != null && rid != null) {
-            val room = RoomDomain.get(rid,uid)
-            if (room != null) {
-                val invite = InviteDomain.create(rid,uid)
-                Response(OK).body("/invites/${invite.id}")
-            } else {
-                Response(FORBIDDEN)
-            }
-        } else {
-            Response(UNAUTHORIZED)
-        }
+        val requesterId = req.getUserId() ?: return@runBlocking ErrorResponse.unauthorized
+        val room = req.path("id")?.let { roomId ->
+            RoomDomain.get(roomId, requesterId)
+        } ?: return@runBlocking ErrorResponse.notFound
+
+        val invite = InviteDomain.create(room.id, requesterId)
+        Response(OK).body("/invites/${invite.id}")
     }
 }
 

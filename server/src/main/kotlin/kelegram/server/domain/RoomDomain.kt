@@ -17,6 +17,7 @@ object RoomDomain {
     }
     val get = RoomData::get
     suspend fun addMember(roomId: String, memberId: String) {
+        // TODO: atomic
         RoomData.addMember(roomId, memberId)
         UserData.addRoom(memberId, roomId)
     }
