@@ -319,21 +319,22 @@ fun Header(mstate: MState, username: String?, avatar: String?) {
 
 data class MessageBalloonInfo(val isOwn: Boolean, val author: String?, val content: String)
 
-fun List<MessageInfo>.toMessageBalloonInfo(userId: String) =
+fun List<MessageInfoCursor>.toMessageBalloonInfo(userId: String) =
     this.mapIndexed { i, info ->
-        val isOwn = info.user.id == userId
+        val user = info.message.user
+        val isOwn = user.id == userId
         val showAuthor = if (i != 0) {
-            !isOwn && this[i - 1].user.id != info.user.id
+            !isOwn && this[i - 1].message.user.id != user.id
         } else {
             !isOwn
         }
-        val author = if (showAuthor) info.user.nickname else null
-        MessageBalloonInfo(isOwn, author, info.content)
+        val author = if (showAuthor) user.nickname else null
+        MessageBalloonInfo(isOwn, author, info.message.content)
     }
 
 @Composable
-fun Chat(name: String, messages: List<MessageInfo>, userId: String?, state: MState) {
-    val messagesWrapperScrollable = remember{ mutableStateOf<HTMLDivElement?>(null) }
+fun Chat(name: String, messages: List<MessageInfoCursor>, userId: String?, state: MState) {
+    val messagesWrapperScrollable = remember { mutableStateOf<HTMLDivElement?>(null) }
     val ref = messagesWrapperScrollable.value
     LaunchedEffect(messages.size, ref) {
         if (ref != null) {
@@ -349,9 +350,9 @@ fun Chat(name: String, messages: List<MessageInfo>, userId: String?, state: MSta
         Div(attrs = {
             classes(MainStylesheet.messages)
             ref {
-               messagesWrapperScrollable.value = it
-               onDispose {messagesWrapperScrollable.value = null}
-           }
+                messagesWrapperScrollable.value = it
+                onDispose { messagesWrapperScrollable.value = null }
+            }
         }) {
             Stack {
                 if (userId != null) {
@@ -393,7 +394,7 @@ fun MainPage(state: MState) {
     Style(BaloonStyle)
     val loading = remember { mutableStateOf(true) }
     val modalSelectState = remember { mutableStateOf(ModalSelect.None) }
-    val msg = remember { mutableStateListOf<MessageInfo>() }
+    val msg = remember { mutableStateListOf<MessageInfoCursor>() }
     val membersState = remember { mutableStateListOf<UserInfo>() }
     val scope = rememberCoroutineScope()
 
@@ -447,10 +448,10 @@ fun MainPage(state: MState) {
                 Inline {
                     Rooms(modalSelectState, rooms, selectedRoom, onClick = { room: Room ->
                         scope.launch {
-                            val list = getMessages(room.id)
-                            if (list != null) {
+                            val page = getMessages(room.id)
+                            if (page != null) {
                                 msg.clear()
-                                msg.addAll(list)
+                                msg.addAll(page.messages)
                             } else {
                                 msg.clear()
                             }
@@ -492,6 +493,7 @@ fun MainPage(state: MState) {
                 modalSelectState.value = ModalSelect.None
             }
         })
+
         ModalSelect.CreateInvite -> CreateInviteModal(onCancel = {
             modalSelectState.value = ModalSelect.None
         }, onConfirm = {
@@ -502,6 +504,7 @@ fun MainPage(state: MState) {
                 }
             }
         }, inviteLink = inviteLink.value)
+
         ModalSelect.AcceptInvite -> {
             val invite = inviteState.value
             if (invite != null) {
@@ -523,8 +526,12 @@ fun MainPage(state: MState) {
                 })
             }
         }
+
         ModalSelect.Disconnect -> DisconnectedModal {
             modalSelectState.value = ModalSelect.None
         }
+
+        // TODO: review
+        else -> {}
     }
 }

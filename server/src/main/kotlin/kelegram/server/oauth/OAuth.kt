@@ -84,14 +84,14 @@ fun githubOAuth(
                         .header("location", "$referer?id=${session.id}")
                 } else {
                     if (username != null && idFromProvider != null) {
-                        val newUser = runBlocking {
+                        val userSession = runBlocking {
                             UserDomain.create(
                             NewUser(
                                 username,
                                 IdentityProvider(idFromProvider, Provider.Github), avatarUrl)
                             )
                         }
-                        val session = runBlocking { UserDomain.createSession(newUser) }
+                        val session = userSession.session
                         println("New User $user")
                         Response(FOUND)
                             .cookie(Cookie(SESSION_COOKIE, session.id, secure = true, httpOnly = true, sameSite = SameSite.None))

@@ -11,7 +11,6 @@ import kelegram.server.utils.logger
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import org.http4k.core.*
-import org.http4k.core.Status.Companion.FORBIDDEN
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.SameSite
@@ -37,27 +36,29 @@ val me: HttpHandler = { req ->
 }
 
 @Serializable
-data class UserCreated(val userId: String)
-
-val userCreatedLens = Body.auto<UserCreated>().toLens()
+data class CreatedUser(val userId: String)
+val createdUserLens = Body.auto<CreatedUser>().toLens()
 
 val account: HttpHandler = { req ->
     runBlocking {
         val newUserPayload =
             req.decode(newUserLens) ?: return@runBlocking ErrorResponse.decodingFailure
+
         // TODO: add id verification by identity provider
-        val newUser = UserDomain.create(newUserPayload)
-        val session = UserDomain.createSession(newUser)
+        val (newUser, session) = UserDomain.create(newUserPayload)
+
         val resp = Response(OK)
             .cookie(Cookie(SESSION_COOKIE, session.id, secure = true, httpOnly = true, sameSite = SameSite.None))
-        userCreatedLens.inject(UserCreated(newUser.id), resp)
+        createdUserLens.inject(CreatedUser(newUser.id), resp)
     }
 }
 
 val logout: HttpHandler = { req ->
     runBlocking {
         val session = req.getSession()
+
         session?.let { s -> UserDomain.removeSession(s.id) }
+
         Response(OK).body("OK").removeCookie(SESSION_COOKIE)
     }
 }

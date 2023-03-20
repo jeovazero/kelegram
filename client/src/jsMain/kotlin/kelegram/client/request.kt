@@ -92,7 +92,7 @@ suspend fun getRooms(): List<Room>? {
     return null
 }
 
-suspend fun getMessages(id: String): List<MessageInfo>? {
+suspend fun getMessages(id: String): MessageInfoPage? {
     val r = request(
         path = "/rooms/$id/messages",
     )
@@ -224,11 +224,11 @@ suspend fun dispatch(mstate: MState, action: Action) {
             }
         }
         is Action.SetRoom -> {
-            val list = getMessages(action.room.id)
+            val page = getMessages(action.room.id)
             val nextState = mstate.value.copy()
-            if (list != null) {
+            if (page != null) {
                 nextState.messages.clear()
-                nextState.messages.addAll(list)
+                nextState.messages.addAll(page.messages)
             } else {
                 nextState.messages.clear()
             }

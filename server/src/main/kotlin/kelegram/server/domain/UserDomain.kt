@@ -8,19 +8,20 @@ import kelegram.server.data.UserData
 import java.time.LocalDateTime
 import java.util.*
 
+data class UserSession(val user: User, val session: Session)
+
 object UserDomain {
-    suspend fun create(newUser: NewUser): User {
+    suspend fun create(newUser: NewUser): UserSession {
         val id = UUID.randomUUID().toString()
         val user = User(id, newUser.identityProvider, newUser.nickname, newUser.avatarUrl)
         UserData.add(user)
-        return user
+        val session = createSession(user)
+        return UserSession(user, session)
     }
 
     val getById = UserData::getById
 
     val getByIdFromProvider = UserData::getByIdFromProvider
-
-    val getParticipatedRooms = UserData::getRooms
 
     suspend fun createSession(user: User): Session {
         val id = UUID.randomUUID().toString()

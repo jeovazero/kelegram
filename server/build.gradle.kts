@@ -2,6 +2,7 @@ val ktor_version: String by extra
 val logback_version: String by extra
 val http4k_version: String by extra
 val kotlin_version: String by extra
+val kmongo_version: String by extra
 
 plugins {
     application
@@ -32,10 +33,11 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logback_version")
     implementation("io.github.oshai:kotlin-logging-jvm:4.0.0-beta-22")
 
-    implementation("org.litote.kmongo:kmongo-coroutine-serialization:4.5.1")
-    implementation("org.litote.kmongo:kmongo-id-serialization:4.5.1")
+    implementation("org.litote.kmongo:kmongo-coroutine-serialization:$kmongo_version")
+    implementation("org.litote.kmongo:kmongo-id-serialization:$kmongo_version")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
 
     implementation(project(":common"))
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlin_version")

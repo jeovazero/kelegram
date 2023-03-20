@@ -71,6 +71,12 @@ data class MessageInfo(
 )
 
 @Serializable
+data class MessageInfoCursor(val message: MessageInfo, val cursor: String)
+
+@Serializable
+data class MessageInfoPage(val messages: List<MessageInfoCursor>, val hasNext: Boolean)
+
+@Serializable
 data class Invite(val id: String, val roomId: String, val ownerId: String)
 
 @Serializable

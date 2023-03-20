@@ -1,10 +1,12 @@
 package kelegram.server
 
+import kelegram.server.data.ensureIndexes
 import kelegram.server.oauth.githubOAuth
 import kelegram.server.routes.*
 import kelegram.server.utils.FatalErrorHandler
 import kelegram.server.utils.LogHandler
 import kelegram.server.websocket.webSocket
+import kotlinx.coroutines.runBlocking
 import org.http4k.server.Netty
 import org.http4k.server.asServer
 import org.http4k.core.Credentials
@@ -60,6 +62,8 @@ val kek = """
         """.trimMargin()
 
 fun main() {
+    runBlocking { ensureIndexes() }
+
     val root = "/" bind GET to {
         Response(OK).body(kek).header("Content-Type", "text/html; charset=utf-8")
     }

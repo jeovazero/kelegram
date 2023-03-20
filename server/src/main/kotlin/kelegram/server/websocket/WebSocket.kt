@@ -1,13 +1,17 @@
 package kelegram.server.websocket
 
-import kelegram.common.Message
-import kelegram.common.MessageInfo
-import kelegram.common.NewMessage
-import kelegram.common.UserInfo
+import kelegram.common.*
+import kelegram.server.data.MessageDoc
 import kelegram.server.domain.MessageDomain
 import kelegram.server.domain.UserDomain
 import kelegram.server.routes.SESSION_COOKIE
+import kelegram.server.utils.Cursor
+import kelegram.server.utils.Cursor.Companion.encode
+import kelegram.server.utils.logger
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -19,18 +23,28 @@ import org.http4k.websocket.WsMessage
 import org.http4k.websocket.WsStatus
 import org.http4k.websocket.WsStatus.Companion.ABNORMAL_CLOSE
 import org.http4k.websocket.WsStatus.Companion.REFUSE
-import java.time.LocalDateTime
 import java.util.*
+
+val now = { Clock.System.now().toLocalDateTime(TimeZone.UTC) }
 
 fun webSocket() = websockets(
     "/kek" bind { ws: Websocket ->
-        ws.send(WsMessage(Json.encodeToString(MessageInfo(
-            "What did you learn?",
-            UserInfo("hello", "***"),
-            "***",
-            "***",
-            LocalDateTime.now().toString()
-        ))))
+        val nowTime = now()
+        ws.send(
+            WsMessage(
+                Json.encodeToString(
+                    MessageInfoCursor(
+                        MessageInfo(
+                            "What did you learn?",
+                            UserInfo("hello", "***"),
+                            "***",
+                            "***",
+                            nowTime.toString()
+                        ), Cursor("***", nowTime).encode()
+                    )
+                )
+            )
+        )
         val req = ws.upgradeRequest
         val sessionId = req.cookie(SESSION_COOKIE)?.value
         println("SESSION $sessionId")
@@ -39,7 +53,7 @@ fun webSocket() = websockets(
         }
         if (session == null) {
             ws.close(
-                WsStatus(REFUSE.code,"Not authorized")
+                WsStatus(REFUSE.code, "Not authorized")
             )
         } else {
             val uid = session.userId
@@ -57,24 +71,29 @@ fun webSocket() = websockets(
                             receivedText
                         )
                     val id = UUID.randomUUID().toString()
-                    val msgWs = Message(
+                    val nowMsg = now()
+                    val msgWs = MessageDoc(
                         msg.content,
                         msg.fromUser,
                         msg.toRoom,
                         id,
-                        LocalDateTime.now().toString()
+                        nowMsg.toString()
                     )
+                    logger.debug { "Searching user by ${msg.fromUser}" }
                     val user = runBlocking {
                         MessageDomain.create(msgWs)
                         UserDomain.getById(msg.fromUser)
                     }
+                    logger.debug { "Found ${user}" }
                     if (user != null) {
-                        val msgToSend = MessageInfo(
-                            msg.content,
-                            UserInfo(user.nickname, user.id),
-                            msg.toRoom,
-                            id,
-                            msgWs.createdAt
+                        val msgToSend = MessageInfoCursor(
+                            MessageInfo(
+                                msg.content,
+                                UserInfo(user.nickname, user.id),
+                                msg.toRoom,
+                                id,
+                                msgWs.createdAt
+                            ), Cursor(id, nowMsg).encode()
                         )
                         // TODO: verify permission to send a msg to a room
                         // naive solution, set all rooms again
@@ -85,8 +104,11 @@ fun webSocket() = websockets(
 
                         val msgText = Json.encodeToString(msgToSend)
                         WSConnection.sendToRoom(msg.toRoom, msgText)
+                    } else {
+                        logger.debug { "Something wrong with user: ${user}"}
                     }
                 } catch (err: Exception) {
+                    logger.debug { err.toString() }
                     runBlocking {
                         WSConnection.removeAll(uid)
                     }

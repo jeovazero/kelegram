@@ -1,13 +1,12 @@
 package kelegram.server.routes
 
 import kelegram.common.NewRoom
+import kelegram.server.domain.*
 import kelegram.server.websocket.WSConnection
-import kelegram.server.domain.InviteDomain
-import kelegram.server.domain.RoomDomain
-import kelegram.server.domain.UserDomain
 import kelegram.server.utils.DecodeReq.decode
 import kelegram.server.utils.ErrorResponse
 import kelegram.server.utils.UserSession.getUserId
+import kelegram.server.utils.handleCommonResult
 import kotlinx.coroutines.runBlocking
 import org.http4k.core.*
 import org.http4k.core.Status.Companion.OK
@@ -26,6 +25,7 @@ val ownedRooms: HttpHandler = { req ->
         val user = UserDomain.getById(requesterId) ?: return@runBlocking ErrorResponse.notFound
 
         val result = RoomDomain.create(newRoom, user.id)
+
         WSConnection.setRoom(result.id, user.id)
         Response(OK).body(result.id)
     }
@@ -34,12 +34,14 @@ val ownedRooms: HttpHandler = { req ->
 val ownedRoomsInvites: HttpHandler = { req ->
     runBlocking {
         val requesterId = req.getUserId() ?: return@runBlocking ErrorResponse.unauthorized
-        val room = req.path("id")?.let { roomId ->
-            RoomDomain.get(roomId, requesterId)
-        } ?: return@runBlocking ErrorResponse.notFound
+        val roomId = req.path("id")  ?: return@runBlocking ErrorResponse.notFound
 
-        val invite = InviteDomain.create(room.id, requesterId)
-        Response(OK).body("/invites/${invite.id}")
+        val result = InviteDomain.create(roomId, requesterId)
+
+        when(result) {
+            is CreateInviteResult.Ok -> Response(OK).body("/invites/${result.invite.id}")
+            is CommonResult -> handleCommonResult(result)
+        }
     }
 }
 

@@ -3,7 +3,7 @@ package kelegram.client
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import kelegram.common.MessageInfo
+import kelegram.common.MessageInfoCursor
 import kelegram.common.Room
 import kelegram.common.User
 import kotlinx.serialization.Contextual
@@ -25,7 +25,7 @@ data class State(
     var user: User? = null,
     var rooms: List<Room>? = null,
     var selectedRoom: Room? = null,
-    @Contextual var messages: SnapshotStateList<MessageInfo> = mutableStateListOf(),
+    @Contextual var messages: SnapshotStateList<MessageInfoCursor> = mutableStateListOf(),
     @Contextual var socket: WebSocket? = null,
 )
 

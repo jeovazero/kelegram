@@ -1,6 +1,7 @@
+package kelegram.server.data
+
 import kelegram.common.Invite
 import kelegram.common.InviteInfo
-import kelegram.server.data.database
 import org.litote.kmongo.*
 import org.litote.kmongo.coroutine.aggregate
 
@@ -13,6 +14,10 @@ object InviteData {
 
     suspend fun get(inviteId: String): Invite? {
         return inviteCol.findOne(Invite::id eq inviteId)
+    }
+
+    suspend fun remove(inviteId: String) {
+        inviteCol.deleteOne(Invite::id eq inviteId)
     }
 
     suspend fun getInfo(inviteId: String): InviteInfo? {
