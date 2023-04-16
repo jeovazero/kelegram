@@ -40,7 +40,7 @@ object MessageData {
     suspend fun getInfoByRoomId(roomId: String, afterCursor: Cursor?, limit: Int): List<MessageInfoDoc> {
         val roomFilter = MessageDoc::roomId eq roomId
         val afterFilter: Bson? =
-            afterCursor?.let { and(MessageDoc::createdAt gt it.createdAt.toString()) }
+            afterCursor?.let { and(MessageDoc::createdAt lt it.createdAt.toString()) }
         val filters = if (afterFilter != null) and(roomFilter, afterFilter) else roomFilter
         logger.debug {
             match(filters).toString()
@@ -54,8 +54,8 @@ object MessageData {
                 newAs = "user"
             ),
             unwind("user".projection),
-            sort(orderBy(listOf(MessageDoc::createdAt, MessageDoc::_id), true)),
-            limit(limit + 1)
+            sort(orderBy(listOf(MessageDoc::createdAt, MessageDoc::_id), false)),
+            limit(limit)
         ).toList()
     }
 }

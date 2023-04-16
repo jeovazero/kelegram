@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension
 
 plugins {
     application
-    id("org.jetbrains.compose") version "1.3.1"
+    id("org.jetbrains.compose") version "1.4.0"
     kotlin("multiplatform")
     kotlin("plugin.serialization") version "1.8.10"
 }
@@ -27,7 +27,7 @@ kotlin {
         }
         val jsMain by getting {
             dependencies {
-                implementation(compose.web.core)
+                implementation(compose.html.core)
                 implementation(compose.runtime)
             }
         }

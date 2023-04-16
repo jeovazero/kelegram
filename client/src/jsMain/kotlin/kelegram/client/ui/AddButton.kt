@@ -1,7 +1,6 @@
 package kelegram.client.ui
 
 import androidx.compose.runtime.Composable
-import kelegram.client.AppCSSVariables
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.Div
 

@@ -1,7 +1,6 @@
 package kelegram.client.ui
 
 import androidx.compose.runtime.Composable
-import kelegram.client.KelegramStylesheet
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.Main
 
@@ -21,7 +20,7 @@ fun AppWrapper(content: @Composable () -> Unit) {
     Style(CommonStylesheet)
     Main(
         attrs = {
-            classes(KelegramStylesheet.kTheme,KelegramStylesheet.bgPrimary,CommonStylesheet.wrapper)
+            classes(KelegramStylesheet.kTheme, KelegramStylesheet.bgPrimary,CommonStylesheet.wrapper)
         }
     ) {
         content()

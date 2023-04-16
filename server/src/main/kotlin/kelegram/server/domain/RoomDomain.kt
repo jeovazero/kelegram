@@ -1,6 +1,5 @@
 package kelegram.server.domain
 
-import kelegram.common.MessageInfo
 import kelegram.common.NewRoom
 import kelegram.common.Room
 import kelegram.common.UserInfo
@@ -45,7 +44,7 @@ object RoomDomain {
     }
 
     suspend fun getMessages(requesterId: String, roomId: String, after: Cursor?, limit: Int): GetMessagesResult {
-        RoomData.get(roomId, requesterId) ?: return CommonResult.Forbidden
+        RoomData.getRoomByMember(roomId, requesterId) ?: return CommonResult.Forbidden
         return GetMessagesResult.Ok(MessageData.getInfoByRoomId(roomId, after, limit))
     }
 }

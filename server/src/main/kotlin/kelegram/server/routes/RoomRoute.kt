@@ -51,7 +51,7 @@ val roomMessages: HttpHandler = { req ->
         logger.debug { afterCursor.toString() }
         val limit = req.query("limit")?.toIntOrNull() ?: 20
 
-        val result = RoomDomain.getMessages(requesterId, roomId, afterCursor, limit)
+        val result = RoomDomain.getMessages(requesterId, roomId, afterCursor, limit + 1)
 
         when (result) {
             is GetMessagesResult.Ok -> {
@@ -63,6 +63,7 @@ val roomMessages: HttpHandler = { req ->
         }
     }
 }
+
 val roomsMembers: HttpHandler = { req ->
     runBlocking {
         val requesterId = req.getUserId() ?: return@runBlocking ErrorResponse.unauthorized

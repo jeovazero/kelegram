@@ -1,10 +1,16 @@
 package kelegram.client.pages
 
 import androidx.compose.runtime.*
-import kelegram.client.*
 import kelegram.client.modals.AcceptInviteModal
 import kelegram.client.modals.CreateInviteModal
 import kelegram.client.modals.DisconnectedModal
+import kelegram.client.service.Json
+import kelegram.client.service.Service.createInvite
+import kelegram.client.service.Service.getInvite
+import kelegram.client.service.Service.getMembers
+import kelegram.client.service.Service.getMessages
+import kelegram.client.service.Service.validateInvite
+import kelegram.client.state.*
 import kelegram.client.tokens.Token
 import kelegram.client.ui.*
 import kelegram.common.*
@@ -148,6 +154,12 @@ object MainStylesheet : StyleSheet() {
     val headerUserWrapper by style {
         alignItems(AlignItems.Center)
         maxWidth(300.px)
+    }
+    val loadMore by style {
+
+        textAlign("center")
+        textDecorationLine("underline")
+        cursor("pointer")
     }
     val truncateText by style {
         property("text-overflow", "ellipsis")
@@ -333,12 +345,23 @@ fun List<MessageInfoCursor>.toMessageBalloonInfo(userId: String) =
     }
 
 @Composable
-fun Chat(name: String, messages: List<MessageInfoCursor>, userId: String?, state: MState) {
+fun Chat(
+    name: String,
+    messages: List<MessageInfoCursor>,
+    hasNextPage: Boolean,
+    userId: String?,
+    state: MState,
+    lastMessageSource: LoadMessageAction,
+    loadNextPage: (cursor: String) -> Unit
+) {
     val messagesWrapperScrollable = remember { mutableStateOf<HTMLDivElement?>(null) }
     val ref = messagesWrapperScrollable.value
     LaunchedEffect(messages.size, ref) {
         if (ref != null) {
-            ref.scrollTop = ref.scrollHeight.toDouble()
+            when(lastMessageSource) {
+                LoadMessageAction.LoadMore -> ref.scrollTop = 0.0
+                else -> ref.scrollTop = ref.scrollHeight.toDouble()
+            }
         }
     }
     Stack(className = MainStylesheet.chatWrapper) {
@@ -356,6 +379,15 @@ fun Chat(name: String, messages: List<MessageInfoCursor>, userId: String?, state
         }) {
             Stack {
                 if (userId != null) {
+                    if (hasNextPage) {
+                        Box(className = MainStylesheet.loadMore) {
+                            A(attrs = {
+                                onClick {
+                                    messages.first().let { loadNextPage(it.cursor) }
+                                }
+                            }) { Text("Load more") }
+                        }
+                    }
                     messages.toMessageBalloonInfo(userId).forEach { message ->
                         MessageBaloon(
                             message.content, message.author, message.isOwn
@@ -388,13 +420,22 @@ fun Chat(name: String, messages: List<MessageInfoCursor>, userId: String?, state
     }
 }
 
+enum class LoadMessageAction {
+    LoadMore,
+    Send,
+    Initial
+}
+typealias RoomId = String
+
 @Composable
 fun MainPage(state: MState) {
     Style(MainStylesheet)
     Style(BaloonStyle)
     val loading = remember { mutableStateOf(true) }
     val modalSelectState = remember { mutableStateOf(ModalSelect.None) }
-    val msg = remember { mutableStateListOf<MessageInfoCursor>() }
+    val messagesState = remember { mutableStateListOf<MessageInfoCursor>() }
+    val hasNextPage = remember { mutableStateOf(false) }
+    val lastMessageSource = remember { mutableStateOf(LoadMessageAction.Initial) }
     val membersState = remember { mutableStateListOf<UserInfo>() }
     val scope = rememberCoroutineScope()
 
@@ -430,7 +471,8 @@ fun MainPage(state: MState) {
     LaunchedEffect(state.value.socket) {
         state.value.socket?.apply {
             onmessage = {
-                msg.add(Json.decodeFromString(it.data as String))
+                lastMessageSource.value = LoadMessageAction.Send
+                messagesState.add(Json.decodeFromString(it.data as String))
             }
             onopen = { }
             onclose = {
@@ -449,11 +491,13 @@ fun MainPage(state: MState) {
                     Rooms(modalSelectState, rooms, selectedRoom, onClick = { room: Room ->
                         scope.launch {
                             val page = getMessages(room.id)
+                            lastMessageSource.value = LoadMessageAction.Initial
                             if (page != null) {
-                                msg.clear()
-                                msg.addAll(page.messages)
+                                messagesState.clear()
+                                messagesState.addAll(page.messages.reversed())
+                                hasNextPage.value = page.hasNext
                             } else {
-                                msg.clear()
+                                messagesState.clear()
                             }
                             state.value = state.value.copy(selectedRoom = room)
                         }
@@ -468,7 +512,24 @@ fun MainPage(state: MState) {
                     Div(attrs = { classes(MainStylesheet.chat) }) {
                         if (selectedRoom != null) {
                             Chat(
-                                selectedRoom.name, messages = msg, userId = user?.id, state
+                                selectedRoom.name,
+                                messages = messagesState,
+                                userId = user?.id,
+                                hasNextPage = hasNextPage.value,
+                                state = state,
+                                lastMessageSource = lastMessageSource.value,
+                                loadNextPage = { cursor: String ->
+                                    scope.launch {
+                                        val page = getMessages(selectedRoom.id, cursor)
+                                        if (page != null) {
+                                            messagesState.addAll(0, page.messages.reversed())
+                                            lastMessageSource.value = LoadMessageAction.LoadMore
+                                            hasNextPage.value = page.hasNext
+                                        } else {
+                                            messagesState.clear()
+                                        }
+                                    }
+                                }
                             )
                         } else {
                             Div { P { Text("Select a room") } }

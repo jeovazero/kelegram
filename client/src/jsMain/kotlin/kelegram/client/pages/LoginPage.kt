@@ -1,13 +1,14 @@
 package kelegram.client.pages
 
 import androidx.compose.runtime.*
-import kelegram.client.*
+import kelegram.client.service.KelegramServer
+import kelegram.client.state.Action
+import kelegram.client.state.MState
+import kelegram.client.state.dispatch
 import kelegram.client.tokens.Token
-import kelegram.client.ui.Button
-import kelegram.client.ui.Inline
-import kelegram.client.ui.Logo
-import kelegram.client.ui.Stack
+import kelegram.client.ui.*
 import kotlinx.browser.window
+import kotlinx.datetime.Clock
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.H3
@@ -61,8 +62,8 @@ fun OAuth(url: String, onAuth: () -> Unit, content:  @Composable () -> Unit) {
             var timer = 0
             if (popup != null) {
                 timer = window.setInterval({
-                    val url = URL(popup.location.href)
-                    val path = url.pathname
+                    val localurl = URL(popup.location.href)
+                    val path = localurl.pathname
                     if (path == "/app") {
                         onAuth()
                         popup.close()
@@ -82,29 +83,49 @@ fun OAuth(url: String, onAuth: () -> Unit, content:  @Composable () -> Unit) {
     }
 }
 
+data class LoginRequests(val defineMe: Boolean, val createAccount: String?)
+
 @Composable
 fun LoginPage(mstate: MState) {
     Style(LoginStylesheet)
-    val requestMe = remember { mutableStateOf(false) }
+    val (requests, setRequests) = remember { mutableStateOf(LoginRequests(false, null)) }
 
-    LaunchedEffect(requestMe.value) {
-        dispatch(mstate, Action.DefineMe)
+    LaunchedEffect(requests) {
+        val state = requests
+        if (state.defineMe) {
+            dispatch(mstate, Action.DefineMe)
+            setRequests(requests.copy(defineMe = false))
+        }
+        if (state.createAccount != null) {
+            dispatch(mstate, Action.CreateAccount(state.createAccount))
+            setRequests(requests.copy(createAccount = null))
+        }
     }
-
     Stack(className = LoginStylesheet.wrapper) {
         Div (attrs =  { classes(LoginStylesheet.headerBox) }) {
             Logo()
         }
         Div(attrs = { classes(LoginStylesheet.box) }) {
-            Inline (className = LoginStylesheet.signin) {
-                H3(attrs = {
-                    classes(LoginStylesheet.title)
-                }){ Text("Sign In") }
-                OAuth(url = "${KelegramServer.BASE}/login", onAuth = {
-                    requestMe.value = true
-                }) {
-                    Button (fullWidth = true) {
-                        Text("Login")
+            Stack (Spacing.Medium) {
+                Inline(className = LoginStylesheet.signin) {
+                    H3(attrs = {
+                        classes(LoginStylesheet.title)
+                    }) { Text("Sign In") }
+                    OAuth(url = "${KelegramServer.BASE}/login", onAuth = {
+                        setRequests(requests.copy(defineMe = true))
+                    }) {
+                        Button(fullWidth = true) {
+                            Text("Login")
+                        }
+                    }
+                }
+                if (mstate.value.env == "development") {
+                    Button(fullWidth = true, onClick = {
+                        val tmp = Clock.System.now().toEpochMilliseconds()
+                        val nickname = "guest-${tmp}"
+                        setRequests(requests.copy(createAccount = nickname))
+                    }) {
+                        Text("Guest Account")
                     }
                 }
             }

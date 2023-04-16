@@ -1,4 +1,4 @@
-package kelegram.client
+package kelegram.client.state
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
@@ -25,6 +25,7 @@ data class State(
     var user: User? = null,
     var rooms: List<Room>? = null,
     var selectedRoom: Room? = null,
+    val env: String = js("ENV").unsafeCast<String>(),
     @Contextual var messages: SnapshotStateList<MessageInfoCursor> = mutableStateListOf(),
     @Contextual var socket: WebSocket? = null,
 )

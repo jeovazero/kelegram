@@ -20,6 +20,10 @@ object RoomData {
         return roomCol.findOne(Room::id eq id)
     }
 
+    suspend fun getRoomByMember(id: String, userId: String): Room? =
+        roomCol.findOne(and(Room::id eq id, Room::membersIds contains userId))
+
+
     suspend fun addMember(roomId: String, memberId: String) {
         roomCol.updateOne(Room::id eq roomId,
             push(Room::membersIds, memberId)

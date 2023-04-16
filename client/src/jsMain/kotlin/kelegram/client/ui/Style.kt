@@ -1,4 +1,4 @@
-package kelegram.client
+package kelegram.client.ui
 
 import kelegram.client.tokens.Token
 import org.jetbrains.compose.web.css.*
@@ -42,7 +42,7 @@ fun CSSBuilder.createBG(
 
 object KelegramStylesheet : StyleSheet() {
     init {
-        "p,span,button,label,h1,h2,h3,h4,h5,h6,input" style {
+        "p,span,button,label,a,h1,h2,h3,h4,h5,h6,input" style {
             fontFamily(*Token.fontFamily)
         }
     }
@@ -66,20 +66,24 @@ object KelegramStylesheet : StyleSheet() {
         color(AppCSSVariables.primaryText.value())
     }
     val bgPrimary by style {
-        createBG(AppCSSVariables.primary.value(),
+        createBG(
+            AppCSSVariables.primary.value(),
             AppCSSVariables.primaryPair.value())
     }
     val bgSecondary by style {
-        createBG(AppCSSVariables.secondary.value(),
+        createBG(
+            AppCSSVariables.secondary.value(),
             AppCSSVariables.secondaryPair.value())
     }
     val bgNeutral by style {
-        createBG(AppCSSVariables.neutralLight.value(),
+        createBG(
+            AppCSSVariables.neutralLight.value(),
             AppCSSVariables.neutralLighten.value())
         color(AppCSSVariables.neutralMedium.value())
     }
     val bgPrimaryOpacity by style {
-        createBG(AppCSSVariables.primaryOpacity.value(),
+        createBG(
+            AppCSSVariables.primaryOpacity.value(),
             AppCSSVariables.primaryPairOpacity.value())
     }
     val borderRadiusSmall by style {

@@ -1,8 +1,8 @@
 package kelegram.client.modals
 
 import androidx.compose.runtime.Composable
-import kelegram.client.AppCSSVariables
-import kelegram.client.KelegramStylesheet
+import kelegram.client.ui.AppCSSVariables
+import kelegram.client.ui.KelegramStylesheet
 import kelegram.client.tokens.Token
 import kelegram.client.ui.Button
 import kelegram.client.ui.Spacing

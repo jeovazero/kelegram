@@ -2,10 +2,10 @@ package kelegram.client.pages
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
-import kelegram.client.Action
-import kelegram.client.AppCSSVariables
-import kelegram.client.MState
-import kelegram.client.dispatch
+import kelegram.client.state.Action
+import kelegram.client.state.MState
+import kelegram.client.state.dispatch
+import kelegram.client.ui.AppCSSVariables
 import kelegram.client.ui.Button
 import kelegram.client.ui.Stack
 import kotlinx.browser.document
