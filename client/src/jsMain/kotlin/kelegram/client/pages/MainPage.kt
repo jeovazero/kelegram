@@ -1,14 +1,20 @@
 package kelegram.client.pages
 
 import androidx.compose.runtime.*
-import kelegram.client.*
 import kelegram.client.modals.AcceptInviteModal
 import kelegram.client.modals.CreateInviteModal
+import kelegram.client.modals.DisconnectedModal
+import kelegram.client.service.Json
+import kelegram.client.service.Service.createInvite
+import kelegram.client.service.Service.getInvite
+import kelegram.client.service.Service.getMembers
+import kelegram.client.service.Service.getMessages
+import kelegram.client.service.Service.validateInvite
+import kelegram.client.state.*
 import kelegram.client.tokens.Token
 import kelegram.client.ui.*
 import kelegram.common.*
 import kotlinx.browser.document
-import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -17,23 +23,29 @@ import org.jetbrains.compose.web.attributes.name
 import org.jetbrains.compose.web.attributes.placeholder
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
+import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLInputElement
 
 object MainStylesheet : StyleSheet() {
     val wrapper by style {
-        marginTop(2.cssRem)
+        marginTop(16.px)
+        property("height", "calc(100% - 32px)")
+        height(CSSCalcValue(100.percent.minus(32.px)))
     }
     val box by style { // container is a class
-        padding(1.5.cssRem)
+        padding(0.5.cssRem, 1.cssRem)
         backgroundColor(Token.pallete.primaryText)
         alignSelf(AlignSelf.Center)
         display(DisplayStyle.Flex)
         textAlign("left")
         justifyContent(JustifyContent.Center)
         borderRadius(0.px, 0.px, 16.px, 16.px)
+        flex(1)
+        boxSizing("border-box")
+        property("height", "calc(100% - 56px - 2rem)")
     }
     val headerBox by style {
-        padding(1.cssRem, 2.cssRem)
+        padding(1.cssRem, 1.5.cssRem)
         display(DisplayStyle.Flex)
         justifyContent(JustifyContent.SpaceBetween)
         alignItems(AlignItems.Center)
@@ -47,12 +59,11 @@ object MainStylesheet : StyleSheet() {
     }
     val list by style {
         width(128.px)
-        padding(1.cssRem)
-        paddingTop(0.px)
+        padding(0.px, 0.5.cssRem)
     }
     val listHeader by style {
         alignItems(AlignItems.Center)
-        paddingTop(1.cssRem)
+        paddingTop(0.5.cssRem)
         paddingBottom(1.cssRem)
         child(self, type("div")) style {
             marginRight(8.px)
@@ -104,24 +115,29 @@ object MainStylesheet : StyleSheet() {
     }
     val user by style {
         fontSize(1.5.cssRem)
-        paddingTop(1.5.cssRem)
-        paddingBottom(1.5.cssRem)
         color(AppCSSVariables.neutralMedium.value())
     }
     val chat by style {
         width(512.px)
-        padding(1.cssRem)
+        padding(0.5.cssRem)
         paddingTop(0.px)
+        paddingBottom(16.px)
+        height(100.percent)
+        boxSizing("border-box")
+    }
+    val chatWrapper by style {
+        height(100.percent)
     }
     val messages by style {
         backgroundColor(AppCSSVariables.neutralLight.value())
         width(100.percent)
-        height(512.px)
         boxSizing("border-box")
         padding(1.5.cssRem)
         borderRadius(16.px)
         marginBottom(1.cssRem)
         overflow("auto")
+        minHeight(240.px)
+        height(100.percent)
     }
     val input by style {
         width(100.percent)
@@ -134,6 +150,30 @@ object MainStylesheet : StyleSheet() {
             style(LineStyle.None)
         }
         marginRight(1.cssRem)
+    }
+    val headerUserWrapper by style {
+        alignItems(AlignItems.Center)
+        maxWidth(300.px)
+    }
+    val loadMore by style {
+
+        textAlign("center")
+        textDecorationLine("underline")
+        cursor("pointer")
+    }
+    val truncateText by style {
+        property("text-overflow", "ellipsis")
+        overflow("hidden")
+        property("white-space", "no-wrap")
+    }
+    val logout by style {
+        fontSize(12.px)
+        textAlign("right")
+        color(AppCSSVariables.highlight.value())
+        self + hover style {
+            textDecorationLine("underline")
+            cursor("pointer")
+        }
     }
 }
 
@@ -158,20 +198,19 @@ object BaloonStyle : StyleSheet() {
         padding(0.75.cssRem)
         color(Color.black)
         backgroundColor(hsl(184, 82, 85))
-        property("word-break","break-all")
+        property("word-break", "break-all")
     }
 }
 
 @Composable
-fun MessageBaloon(message: String, nickname: String, isOwn: Boolean = false) {
-    Style(BaloonStyle)
+fun MessageBaloon(message: String, nickname: String?, isOwn: Boolean) {
     Div(attrs = {
         classes(BaloonStyle.wrapper)
         if (isOwn) {
             classes(BaloonStyle.isOwn)
         }
     }) {
-        if (!isOwn) {
+        if (nickname != null) {
             Div(attrs = {
                 classes(BaloonStyle.username)
             }) {
@@ -188,10 +227,7 @@ fun MessageBaloon(message: String, nickname: String, isOwn: Boolean = false) {
 
 
 enum class ModalSelect {
-    CreateRoom,
-    AcceptInvite,
-    CreateInvite,
-    None
+    CreateRoom, AcceptInvite, CreateInvite, Disconnect, None
 }
 
 typealias ModalSelectState = MutableState<ModalSelect>
@@ -216,8 +252,9 @@ fun Rooms(
             Stack(className = MainStylesheet.listBody) {
                 rooms.forEach { room ->
                     Div(attrs = {
-                        classes(MainStylesheet.listItem,
-                            MainStylesheet.roomItem)
+                        classes(
+                            MainStylesheet.listItem, MainStylesheet.roomItem
+                        )
                         if (room.id == selectedRoom?.id) {
                             classes(MainStylesheet.roomSeleted)
                         }
@@ -245,144 +282,269 @@ fun Members(modalSelectState: ModalSelectState, currentUser: User, members: List
     }
     Stack(className = MainStylesheet.listBody) {
         members.forEach { member ->
-            Div (attrs = {
-                classes(MainStylesheet.listItem,MainStylesheet.memberItem)
+            Div(attrs = {
+                classes(MainStylesheet.listItem, MainStylesheet.memberItem)
                 if (member.id == currentUser.id) {
                     classes(MainStylesheet.currentMember)
                 }
             }) {
-                Span{ Text(member.nickname)}
+                Span { Text(member.nickname) }
             }
         }
     }
 }
 
 @Composable
+fun Header(mstate: MState, username: String?, avatar: String?) {
+    val scope = rememberCoroutineScope()
+    Div(attrs = { classes(MainStylesheet.headerBox) }) {
+        Logo()
+        if (username != null) {
+            Stack {
+                Inline(className = MainStylesheet.headerUserWrapper) {
+                    if (avatar != null) {
+                        Img(avatar, "avatar", attrs = {
+                            style {
+                                width(32.px)
+                                height(32.px)
+                                marginRight(8.px)
+                                borderRadius(50.percent)
+                            }
+                        })
+                    }
+                    H3(attrs = { classes(MainStylesheet.user, MainStylesheet.truncateText) }) {
+                        Text(username)
+                    }
+                }
+                A(attrs = {
+                    classes(MainStylesheet.logout)
+                    onClick {
+                        scope.launch {
+                            dispatch(mstate, Action.Logout)
+                        }
+                    }
+                }) { Span { Text("Logout") } }
+            }
+        }
+    }
+}
+
+data class MessageBalloonInfo(val isOwn: Boolean, val author: String?, val content: String)
+
+fun List<MessageInfoCursor>.toMessageBalloonInfo(userId: String) =
+    this.mapIndexed { i, info ->
+        val user = info.message.user
+        val isOwn = user.id == userId
+        val showAuthor = if (i != 0) {
+            !isOwn && this[i - 1].message.user.id != user.id
+        } else {
+            !isOwn
+        }
+        val author = if (showAuthor) user.nickname else null
+        MessageBalloonInfo(isOwn, author, info.message.content)
+    }
+
+@Composable
+fun Chat(
+    name: String,
+    messages: List<MessageInfoCursor>,
+    hasNextPage: Boolean,
+    userId: String?,
+    state: MState,
+    lastMessageSource: LoadMessageAction,
+    loadNextPage: (cursor: String) -> Unit
+) {
+    val messagesWrapperScrollable = remember { mutableStateOf<HTMLDivElement?>(null) }
+    val ref = messagesWrapperScrollable.value
+    LaunchedEffect(messages.size, ref) {
+        if (ref != null) {
+            when(lastMessageSource) {
+                LoadMessageAction.LoadMore -> ref.scrollTop = 0.0
+                else -> ref.scrollTop = ref.scrollHeight.toDouble()
+            }
+        }
+    }
+    Stack(className = MainStylesheet.chatWrapper) {
+        Div(attrs = { classes(MainStylesheet.listHeader) }) {
+            H3(attrs = { classes(MainStylesheet.title) }) {
+                Text(name)
+            }
+        }
+        Div(attrs = {
+            classes(MainStylesheet.messages)
+            ref {
+                messagesWrapperScrollable.value = it
+                onDispose { messagesWrapperScrollable.value = null }
+            }
+        }) {
+            Stack {
+                if (userId != null) {
+                    if (hasNextPage) {
+                        Box(className = MainStylesheet.loadMore) {
+                            A(attrs = {
+                                onClick {
+                                    messages.first().let { loadNextPage(it.cursor) }
+                                }
+                            }) { Text("Load more") }
+                        }
+                    }
+                    messages.toMessageBalloonInfo(userId).forEach { message ->
+                        MessageBaloon(
+                            message.content, message.author, message.isOwn
+                        )
+                    }
+                }
+            }
+        }
+        Inline {
+            Input(type = InputType.Text, attrs = {
+                placeholder("Say hello...")
+                classes(MainStylesheet.input)
+                name("newmessage")
+            })
+            Button(onClick = {
+                val input = document.querySelector("input[name=newmessage]") as HTMLInputElement
+                val m = NewMessage(
+                    fromUser = state.value.user?.id ?: "",
+                    toRoom = state.value.selectedRoom?.id ?: "",
+                    content = input.value
+                )
+                state.value.socket?.send(
+                    Json.encodeToString(
+                        m
+                    )
+                )
+                input.value = ""
+            }) { Text("Send") }
+        }
+    }
+}
+
+enum class LoadMessageAction {
+    LoadMore,
+    Send,
+    Initial
+}
+typealias RoomId = String
+
+@Composable
 fun MainPage(state: MState) {
     Style(MainStylesheet)
+    Style(BaloonStyle)
+    val loading = remember { mutableStateOf(true) }
     val modalSelectState = remember { mutableStateOf(ModalSelect.None) }
-    val msg = remember { mutableStateListOf<MessageInfo>() }
+    val messagesState = remember { mutableStateListOf<MessageInfoCursor>() }
+    val hasNextPage = remember { mutableStateOf(false) }
+    val lastMessageSource = remember { mutableStateOf(LoadMessageAction.Initial) }
     val membersState = remember { mutableStateListOf<UserInfo>() }
     val scope = rememberCoroutineScope()
+
+    val user = state.value.user
+    val rooms = state.value.rooms ?: listOf()
+    val selectedRoom = state.value.selectedRoom
+    val inviteId = state.value.routeParams?.get("inviteId")
+    LaunchedEffect(user) {
+        if (user == null) {
+            dispatch(state, Action.DefineMe)
+        } else {
+            loading.value = false
+        }
+    }
     LaunchedEffect(Unit) {
         dispatch(state, Action.GetRooms)
     }
-    val hash = window.location.hash
-    console.log(hash)
     val inviteState = remember { mutableStateOf<InviteInfo?>(null) }
-    LaunchedEffect(hash) {
-        val paths = hash.split("/")
-        if (paths.size >= 3) {
-            console.log(paths)
-            if (paths[0] == "#" && paths[1] == "invites") {
-                val result = getInvite(paths[2])
-                console.log("INMVITTT")
-                if (result != null) {
-                    inviteState.value = result
-                    modalSelectState.value = ModalSelect.AcceptInvite
-                } else {
-                    console.log("Somenthing wrong, I can feel it")
-                    window.location.replace("")
-                }
+    val inviteLink = remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(inviteId) {
+        if (inviteId != null) {
+            val result = getInvite(inviteId)
+            if (result != null) {
+                inviteState.value = result
+                modalSelectState.value = ModalSelect.AcceptInvite
+            } else {
+                console.error("Error when creating invite")
+                dispatch(state, Action.Redirect("/app"))
             }
         }
     }
     LaunchedEffect(state.value.socket) {
         state.value.socket?.apply {
             onmessage = {
-                console.log(it.data)
-                msg.add(Json.decodeFromString(it.data as String))
+                lastMessageSource.value = LoadMessageAction.Send
+                messagesState.add(Json.decodeFromString(it.data as String))
             }
-            onopen = { print("Open:" + it.type) }
-            onclose = { print("close:" + it.type) }
+            onopen = { }
+            onclose = {
+                modalSelectState.value = ModalSelect.Disconnect
+                Unit
+            }
         }
     }
-    val user = state.value.user
-    val rooms = state.value.rooms ?: listOf()
-    val selectedRoom = state.value.selectedRoom
-    Stack(className = MainStylesheet.wrapper) {
-        Div(attrs = { classes(MainStylesheet.headerBox) }) {
-            Logo()
-            if (user != null) {
-                H3(attrs = { classes(MainStylesheet.user) }) { Text(user.nickname) }
-            }
-        }
-        Div(attrs = { classes(MainStylesheet.box) }) {
-            Inline {
-                Rooms(modalSelectState,
-                    rooms,
-                    selectedRoom,
-                    onClick = { room: Room ->
+    if (loading.value) {
+        LoadingPage()
+    } else {
+        Stack(className = MainStylesheet.wrapper) {
+            Header(state, user?.nickname, user?.avatarUrl)
+            Div(attrs = { classes(MainStylesheet.box) }) {
+                Inline {
+                    Rooms(modalSelectState, rooms, selectedRoom, onClick = { room: Room ->
                         scope.launch {
-                            console.log("GET messages ${room.id}")
-                            val list = getMessages(room.id)
-                            if (list != null) {
-                                msg.clear()
-                                msg.addAll(list)
+                            val page = getMessages(room.id)
+                            lastMessageSource.value = LoadMessageAction.Initial
+                            if (page != null) {
+                                messagesState.clear()
+                                messagesState.addAll(page.messages.reversed())
+                                hasNextPage.value = page.hasNext
+                            } else {
+                                messagesState.clear()
                             }
                             state.value = state.value.copy(selectedRoom = room)
-                            console.log("set rooms")
                         }
                         scope.launch {
-                            console.log("GET members ${room.id}")
                             val list = getMembers(room.id)
                             if (list != null) {
                                 membersState.clear()
                                 membersState.addAll(list)
                             }
-                            console.log("set members")
                         }
                     })
-                Div(attrs = { classes(MainStylesheet.chat) }) {
-                    Stack {
+                    Div(attrs = { classes(MainStylesheet.chat) }) {
                         if (selectedRoom != null) {
-                            Div(attrs = { classes(MainStylesheet.listHeader) }) {
-                                H3(attrs = { classes(MainStylesheet.title) }) {
-                                    Text(selectedRoom.name)
+                            Chat(
+                                selectedRoom.name,
+                                messages = messagesState,
+                                userId = user?.id,
+                                hasNextPage = hasNextPage.value,
+                                state = state,
+                                lastMessageSource = lastMessageSource.value,
+                                loadNextPage = { cursor: String ->
+                                    scope.launch {
+                                        val page = getMessages(selectedRoom.id, cursor)
+                                        if (page != null) {
+                                            messagesState.addAll(0, page.messages.reversed())
+                                            lastMessageSource.value = LoadMessageAction.LoadMore
+                                            hasNextPage.value = page.hasNext
+                                        } else {
+                                            messagesState.clear()
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        Div(attrs = {
-                            classes(MainStylesheet.messages)
-                        }) {
-                            Stack {
-                                msg.forEach { message ->
-                                    MessageBaloon(message.content,
-                                        message.user.nickname, message.user.id == user?.id)
-                                }
-                            }
-                        }
-                        Inline {
-                            Input(type = InputType.Text, attrs = {
-                                placeholder("Say hello...")
-                                classes(MainStylesheet.input)
-                                name("newmessage")
-                            })
-                            Button(
-                                onClick = {
-                                    val input =
-                                        document.querySelector("input[name=newmessage]") as HTMLInputElement
-                                    val m = NewMessage(
-                                        fromUser = state.value.user?.id ?: "",
-                                        toRoom = state.value.selectedRoom?.id
-                                            ?: "",
-                                        content = input.value
-                                    )
-                                    state.value.socket?.send(Json.encodeToString(
-                                        m))
-                                }
-                            ) { Text("Send") }
+                            )
+                        } else {
+                            Div { P { Text("Select a room") } }
                         }
                     }
-                }
-                Div(attrs = { classes(MainStylesheet.list) }) {
-                    if (state.value.selectedRoom != null && user != null) {
-                        Members(modalSelectState, user, membersState)
+                    Div(attrs = { classes(MainStylesheet.list) }) {
+                        if (state.value.selectedRoom != null && user != null) {
+                            Members(modalSelectState, user, membersState)
+                        }
                     }
                 }
             }
         }
     }
+
     when (modalSelectState.value) {
         ModalSelect.CreateRoom -> NewRoomModal(onCancel = {
             modalSelectState.value = ModalSelect.None
@@ -392,23 +554,45 @@ fun MainPage(state: MState) {
                 modalSelectState.value = ModalSelect.None
             }
         })
+
         ModalSelect.CreateInvite -> CreateInviteModal(onCancel = {
             modalSelectState.value = ModalSelect.None
         }, onConfirm = {
             if (selectedRoom?.id != null) {
-                scope.launch { createInvite(selectedRoom.id) }
+                scope.launch {
+                    val result = createInvite(selectedRoom.id)
+                    inviteLink.value = result
+                }
             }
-        })
+        }, inviteLink = inviteLink.value)
+
         ModalSelect.AcceptInvite -> {
             val invite = inviteState.value
             if (invite != null) {
                 AcceptInviteModal(invite, onCancel = {
                     modalSelectState.value = ModalSelect.None
-                    window.location.replace("")
+                    scope.launch {
+                        dispatch(state, Action.Redirect("/app"))
+                    }
                 }, onConfirm = {
-                    scope.launch { validateInvite(invite.id) }
+                    scope.launch {
+                        val r = validateInvite(invite.id)
+                        if (r != null) {
+                            modalSelectState.value = ModalSelect.None
+                            dispatch(state, Action.GetRooms)
+                        } else {
+                            // TODO: error
+                        }
+                    }
                 })
             }
         }
+
+        ModalSelect.Disconnect -> DisconnectedModal {
+            modalSelectState.value = ModalSelect.None
+        }
+
+        // TODO: review
+        else -> {}
     }
 }

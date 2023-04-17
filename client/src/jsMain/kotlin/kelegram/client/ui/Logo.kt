@@ -7,7 +7,7 @@ import org.jetbrains.compose.web.dom.Img
 
 @Composable
 fun Logo() {
-    Img(src="assets/logo.png",
+    Img(src="/assets/logo.png",
         attrs = {
             style {
                 width(auto)

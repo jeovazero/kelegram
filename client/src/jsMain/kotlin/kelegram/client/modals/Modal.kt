@@ -1,8 +1,8 @@
 package kelegram.client.modals
 
 import androidx.compose.runtime.Composable
-import kelegram.client.AppCSSVariables
-import kelegram.client.KelegramStylesheet
+import kelegram.client.ui.AppCSSVariables
+import kelegram.client.ui.KelegramStylesheet
 import kelegram.client.tokens.Token
 import kelegram.client.ui.Button
 import kelegram.client.ui.Spacing
@@ -24,11 +24,15 @@ object ModalStylesheet : StyleSheet() {
         property("z-index", "2")
     }
     val content by style { // container is a class
-        padding(3.cssRem)
+        padding(2.cssRem)
         backgroundColor(Token.pallete.neutralLighten)
         display(DisplayStyle.Flex)
         flexDirection(FlexDirection.Column)
         borderRadius(16.px)
+    }
+    val contentWrapper by style {
+        padding(0.5.cssRem, 0.px)
+        fontSize(1.2.cssRem)
     }
     val input by style {
         width(342.px)
@@ -52,6 +56,7 @@ object ModalStylesheet : StyleSheet() {
 data class ModalAction(
     val labelText: String,
     val variant: Variant = Variant.Primary,
+    val hide: Boolean = false,
     val onClick: (() -> Unit)? = null,
 )
 
@@ -77,13 +82,21 @@ fun Modal(
             }
         }) {
             H3(attrs = { classes(ModalStylesheet.title) }) { Text(title) }
-            content()
+            Div(attrs = {
+                classes(ModalStylesheet.contentWrapper)
+            }) {
+                content()
+            }
             Stack(spacing = Spacing.Small) {
                 actions.forEach { action ->
-                    Button(fullWidth = false,
-                        onClick = action.onClick,
-                        variant = action.variant) {
-                        Text(action.labelText)
+                    if (!action.hide) {
+                        Button(
+                            fullWidth = false,
+                            onClick = action.onClick,
+                            variant = action.variant
+                        ) {
+                            Text(action.labelText)
+                        }
                     }
                 }
             }

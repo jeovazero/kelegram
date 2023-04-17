@@ -2,10 +2,11 @@ package kelegram.client.pages
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
-import kelegram.client.*
-import kelegram.client.tokens.Token
+import kelegram.client.state.Action
+import kelegram.client.state.MState
+import kelegram.client.state.dispatch
+import kelegram.client.ui.AppCSSVariables
 import kelegram.client.ui.Button
-import kelegram.client.ui.Logo
 import kelegram.client.ui.Stack
 import kotlinx.browser.document
 import kotlinx.coroutines.launch
@@ -14,34 +15,15 @@ import org.jetbrains.compose.web.attributes.name
 import org.jetbrains.compose.web.attributes.placeholder
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.Div
-import org.jetbrains.compose.web.dom.H3
 import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Text
 import org.w3c.dom.HTMLInputElement
 
-object SignUpStylesheet : StyleSheet() {
+object SignupStylesheet: StyleSheet() {
     val wrapper by style {
-        alignSelf(AlignSelf.Center)
-    }
-    val box by style { // container is a class
-        padding(3.cssRem)
-        paddingTop(0.cssRem)
-        backgroundColor(Token.pallete.primaryText)
-        alignSelf(AlignSelf.Center)
-        display(DisplayStyle.Flex)
-        textAlign("center")
-        justifyContent(JustifyContent.Center)
-        borderRadius(0.px,0.px,16.px,16.px)
-    }
-    val headerBox by style {
         padding(1.cssRem)
-        property("box-shadow",Token.shadow.header)
-        backgroundColor(Token.pallete.primaryText)
-        textAlign("center")
-        width(100.percent)
-        boxSizing("border-box")
-        property("z-index","1")
-        borderRadius(16.px, 16.px, 0.px, 0.px)
+        backgroundColor(AppCSSVariables.neutralLighten.value())
+        borderRadius(8.px)
     }
     val input by style {
         width(342.px)
@@ -55,22 +37,18 @@ object SignUpStylesheet : StyleSheet() {
         }
         marginBottom(1.cssRem)
     }
-    val title by style {
-        fontSize(1.5.cssRem)
-        paddingTop(3.cssRem)
-        paddingBottom(3.cssRem)
-        color(AppCSSVariables.neutralDark.value())
-    }
 }
 
 @Composable
 fun RegisterForm(mstate: MState) {
     val scope = rememberCoroutineScope()
-    Div {
+    Div(attrs = {
+        classes(SignupStylesheet.wrapper)
+    }) {
         Stack {
             Input(type = InputType.Text,attrs = {
                 placeholder("Your name...")
-                classes(SignUpStylesheet.input)
+                classes(SignupStylesheet.input)
                 name("nickname")
             })
         }
@@ -89,20 +67,11 @@ fun RegisterForm(mstate: MState) {
     }
 }
 
+
 @Composable
-fun SignupPage(state: MState) {
-    Style(SignUpStylesheet)
-    Stack(className = SignUpStylesheet.wrapper) {
-        Div (attrs =  { classes(SignUpStylesheet.headerBox) }) {
-            Logo()
-        }
-        Div(attrs = { classes(SignUpStylesheet.box) }) {
-            Stack {
-                H3(attrs = {
-                    classes(SignUpStylesheet.title)
-                }){ Text("Create Account") }
-                RegisterForm(state)
-            }
-        }
+fun SignupPage(mstate: MState) {
+    Style(SignupStylesheet)
+    Stack {
+        RegisterForm(mstate)
     }
 }

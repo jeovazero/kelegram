@@ -1,37 +1,54 @@
 val ktor_version: String by extra
 val logback_version: String by extra
+val http4k_version: String by extra
+val kotlin_version: String by extra
+val kmongo_version: String by extra
 
 plugins {
     application
     kotlin("jvm")
-    kotlin("plugin.serialization") version "1.5.31"
+    kotlin("plugin.serialization") version "1.8.10"
+    id("org.graalvm.buildtools.native") version "0.9.21"
+    id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
 repositories {
     mavenCentral()
+    gradlePluginPortal()
 }
 
 dependencies {
     // Align versions of all Kotlin components
-    implementation(kotlin("bom"))
+    implementation(kotlin("bom:$kotlin_version"))
 
-    // Use the Kotlin JDK 8 standard library.
-    implementation(kotlin("stdlib-jdk8"))
+    implementation(platform("org.http4k:http4k-bom:$http4k_version"))
+    implementation("org.http4k:http4k-core:$http4k_version")
+    implementation("org.http4k:http4k-server-netty:$http4k_version")
+    implementation("org.http4k:http4k-server-undertow:$http4k_version")
+    implementation("org.http4k:http4k-client-apache:$http4k_version")
+    implementation("org.http4k:http4k-security-oauth:$http4k_version")
+    implementation("org.http4k:http4k-format-kotlinx-serialization:$http4k_version")
+    implementation("org.http4k:http4k-format-jackson:$http4k_version")
 
-    implementation("io.ktor:ktor-server-core:$ktor_version")
-    implementation("io.ktor:ktor-server-netty:$ktor_version")
-    implementation("io.ktor:ktor-websockets:$ktor_version")
-    implementation("io.ktor:ktor-server-sessions:$ktor_version")
-    implementation("io.ktor:ktor-serialization:$ktor_version")
     implementation("ch.qos.logback:logback-classic:$logback_version")
-    implementation("org.litote.kmongo:kmongo-coroutine:4.3.0")
-    implementation("org.litote.kmongo:kmongo-id-serialization:4.3.0")
+    implementation("io.github.oshai:kotlin-logging-jvm:4.0.0-beta-22")
 
-    testImplementation("io.ktor:ktor-server-test-host:$ktor_version")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.1")
+    implementation("org.litote.kmongo:kmongo-coroutine-serialization:$kmongo_version")
+    implementation("org.litote.kmongo:kmongo-id-serialization:$kmongo_version")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
 
     implementation(project(":common"))
+    implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlin_version")
+
+    // Attempt to remove the --allow-incomplete-classpath (almost)
+    implementation("com.github.jnr:jnr-unixsocket:0.38.17")
+    implementation("org.xerial.snappy:snappy-java:1.1.8.4")
+    implementation("com.github.luben:zstd-jni:1.5.2-2")
+    implementation("org.mongodb:mongodb-crypt:1.3.0")
+    implementation("org.apache.logging.log4j:log4j-api:2.17.2")
+
 }
 
 application {
@@ -40,18 +57,42 @@ application {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 tasks {
     compileKotlin {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = "11"
     }
     compileTestKotlin {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = "11"
     }
     compileTestJava {
-        targetCompatibility = "1.8"
+        targetCompatibility = "11"
+    }
+    shadowJar {
+        manifest {
+            attributes(Pair("Main-Class", "kelegram.server.AppKt"))
+        }
+    }
+}
+
+graalvmNative {
+    binaries {
+        named("main") {
+            javaLauncher.set(javaToolchains.launcherFor {
+                languageVersion.set(JavaLanguageVersion.of(11))
+                vendor.set(JvmVendorSpec.matching("GraalVM"))
+            })
+            buildArgs.add("--no-fallback")
+            buildArgs.add("-H:+ReportExceptionStackTraces")
+            buildArgs.add("--initialize-at-run-time=io.netty.util.internal.logging.Log4JLogger")
+            buildArgs.add("--initialize-at-run-time=com.mongodb.UnixServerAddress,com.mongodb.internal.connection.SnappyCompressor")
+            buildArgs.add("--initialize-at-build-time=ch.qos.logback,org.slf4j,javax.xml,jdk.xml")
+
+            // https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/Agent.md#agent-advanced-usage
+            // configurationFileDirectories.from(file("./config"))
+        }
     }
 }

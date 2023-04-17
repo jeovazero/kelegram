@@ -1,0 +1,35 @@
+package kelegram.server
+
+import io.ktor.application.*
+import io.ktor.auth.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.response.*
+import io.ktor.routing.*
+import io.ktor.sessions.*
+
+fun Route.oauthKeycloack() {
+    authenticate("auth-kek") {
+        get("/kek/login") {
+            // Redirects to 'authorizeUrl' automatically
+        }
+        get("/kek/callback") {
+            val principal: OAuthAccessTokenResponse.OAuth2? =
+                    call.principal()
+            println(principal)
+            val token = principal?.accessToken.toString()
+            call.sessions.set(UserSession(token))
+            if (token != null) {
+                val userInfo: UserKC =
+                        httpClient.get("http://localhost:7000/auth/realms/kelegram-auth/protocol/openid-connect/userinfo") {
+                            headers {
+                                append(HttpHeaders.Authorization,
+                                        "Bearer $token")
+                            }
+                        }
+                call.respondText("Hello! ${userInfo.name}")
+            }
+            call.respondText("Hello, anonymous!")
+        }
+    }
+}

@@ -4,12 +4,27 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 @Serializable
-data class NewUser(val nickname: String)
+enum class Provider {
+    Github,
+    Fake
+}
+
+@Serializable
+data class IdentityProvider(val id: String, val provider: Provider)
+
+@Serializable
+data class NewUser(
+    val nickname: String,
+    val identityProvider: IdentityProvider,
+    val avatarUrl: String? = null,
+)
 
 @Serializable
 data class User(
-    val nickname: String,
     val id: String,
+    val identityProvider: IdentityProvider,
+    val nickname: String,
+    val avatarUrl: String?,
     val roomsIds: List<String> = listOf(),
     // @Transient val _id: Id<User> = newId(),
 )
@@ -17,7 +32,7 @@ data class User(
 @Serializable
 data class UserInfo(
     val nickname: String,
-    val id: String
+    val id: String,
 )
 
 @Serializable
@@ -43,6 +58,7 @@ data class Message(
     val userId: String,
     val roomId: String,
     val id: String,
+    val createdAt: String
 )
 
 @Serializable
@@ -51,7 +67,14 @@ data class MessageInfo(
     val user: UserInfo,
     val roomId: String,
     val id: String,
+    val createdAt: String
 )
+
+@Serializable
+data class MessageInfoCursor(val message: MessageInfo, val cursor: String)
+
+@Serializable
+data class MessageInfoPage(val messages: List<MessageInfoCursor>, val hasNext: Boolean)
 
 @Serializable
 data class Invite(val id: String, val roomId: String, val ownerId: String)
@@ -61,5 +84,5 @@ data class InviteInfo(
     val id: String,
     val roomName: String,
     val ownerName: String,
-    @Transient val ownerId: String = "",
+    val ownerId: String
 )

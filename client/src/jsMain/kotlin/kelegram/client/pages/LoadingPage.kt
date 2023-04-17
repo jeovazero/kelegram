@@ -1,16 +1,10 @@
 package kelegram.client.pages
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
-import kelegram.client.Action
-import kelegram.client.AppCSSVariables
-import kelegram.client.MState
-import kelegram.client.dispatch
+import kelegram.client.ui.AppCSSVariables
 import kelegram.client.tokens.Token
 import kelegram.client.ui.Logo
 import kelegram.client.ui.Stack
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.H3
@@ -32,15 +26,7 @@ object LoadingStylesheet : StyleSheet() {
 }
 
 @Composable
-fun LoadingPage(mstate: MState) {
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        scope.launch {
-            dispatch(mstate, Action.DefineMe)
-        }
-    }
-
+fun LoadingPage() {
     Style(LoadingStylesheet)
     Div(attrs = { classes(LoadingStylesheet.wrapper) }) {
         Stack {
