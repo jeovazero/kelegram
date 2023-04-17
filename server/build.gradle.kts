@@ -8,7 +8,7 @@ plugins {
     application
     kotlin("jvm")
     kotlin("plugin.serialization") version "1.8.10"
-    id("org.graalvm.buildtools.native") version "0.9.4"
+    id("org.graalvm.buildtools.native") version "0.9.21"
     id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
@@ -78,15 +78,21 @@ tasks {
     }
 }
 
-nativeBuild {
-    buildArgs.add("--no-fallback")
-    buildArgs.add("-H:+ReportExceptionStackTraces")
-    buildArgs.add("--initialize-at-run-time=io.netty.util.internal.logging.Log4JLogger")
-    buildArgs.add("--initialize-at-run-time=com.mongodb.UnixServerAddress,com.mongodb.internal.connection.SnappyCompressor")
-    buildArgs.add("--initialize-at-build-time=ch.qos.logback,org.slf4j,javax.xml,jdk.xml")
-    // I tried not to use this one, but with "sun.reflect.Reflection" and "org.apache.log4j.Logger" I don't think it's possible
-    buildArgs.add("--allow-incomplete-classpath")
+graalvmNative {
+    binaries {
+        named("main") {
+            javaLauncher.set(javaToolchains.launcherFor {
+                languageVersion.set(JavaLanguageVersion.of(11))
+                vendor.set(JvmVendorSpec.matching("GraalVM"))
+            })
+            buildArgs.add("--no-fallback")
+            buildArgs.add("-H:+ReportExceptionStackTraces")
+            buildArgs.add("--initialize-at-run-time=io.netty.util.internal.logging.Log4JLogger")
+            buildArgs.add("--initialize-at-run-time=com.mongodb.UnixServerAddress,com.mongodb.internal.connection.SnappyCompressor")
+            buildArgs.add("--initialize-at-build-time=ch.qos.logback,org.slf4j,javax.xml,jdk.xml")
 
-    // https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/Agent.md#agent-advanced-usage
-    // configurationFileDirectories.from(file("./config"))
+            // https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/Agent.md#agent-advanced-usage
+            // configurationFileDirectories.from(file("./config"))
+        }
+    }
 }
