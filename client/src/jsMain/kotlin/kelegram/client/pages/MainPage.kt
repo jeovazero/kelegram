@@ -463,7 +463,7 @@ fun MainPage(state: MState) {
                 inviteState.value = result
                 modalSelectState.value = ModalSelect.AcceptInvite
             } else {
-                console.error("Somenthing wrong, I can feel it")
+                console.error("Error when creating invite")
                 dispatch(state, Action.Redirect("/app"))
             }
         }

@@ -97,7 +97,7 @@ fun webSocket() = websockets(
                         )
                         // TODO: verify permission to send a msg to a room
                         // naive solution, set all rooms again
-                        // this case occurs when a user accepts an invitation and enters a new room
+                        // this case occurs when an user accepts an invitation and enters a new room
                         if (roomConnections.get(msg.toRoom)?.contains(user.id) != true) {
                             WSConnection.setRoom(msg.toRoom, user.id)
                         }

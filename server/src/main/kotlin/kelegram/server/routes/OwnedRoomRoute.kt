@@ -22,6 +22,7 @@ val ownedRooms: HttpHandler = { req ->
     runBlocking {
         val requesterId = req.getUserId() ?: return@runBlocking ErrorResponse.unauthorized
         val newRoom = req.decode(newRoomLens) ?: return@runBlocking ErrorResponse.decodingFailure
+        if (newRoom.name.isEmpty()) return@runBlocking ErrorResponse.unprocessableContent
         val user = UserDomain.getById(requesterId) ?: return@runBlocking ErrorResponse.notFound
 
         val result = RoomDomain.create(newRoom, user.id)

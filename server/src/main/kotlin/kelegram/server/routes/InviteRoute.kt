@@ -32,7 +32,7 @@ val getInvite: HttpHandler = { req ->
         val invite = InviteDomain.getInfo(inviteId) ?: return@runBlocking ErrorResponse.notFound
         logger.debug { invite }
 
-        if (invite.ownerId == requesterId) return@runBlocking ErrorResponse.unprocessableEntity
+        if (invite.ownerId == requesterId) return@runBlocking ErrorResponse.unprocessableContent
         inviteInfoLens(invite, Response(OK))
     }
 }

@@ -84,5 +84,5 @@ data class InviteInfo(
     val id: String,
     val roomName: String,
     val ownerName: String,
-    @Transient val ownerId: String = "",
+    val ownerId: String
 )

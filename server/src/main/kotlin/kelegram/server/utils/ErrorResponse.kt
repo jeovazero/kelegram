@@ -8,5 +8,5 @@ object ErrorResponse {
     val notFound = Response(Status.NOT_FOUND).body("Resource not found")
     val forbidden = Response(Status.FORBIDDEN).body("Forbidden")
     val unauthorized = Response(Status.UNAUTHORIZED).body("Unauthorized")
-    val unprocessableEntity = Response(Status.UNPROCESSABLE_ENTITY).body("Semantically incorrect parameters")
+    val unprocessableContent = Response(Status.UNPROCESSABLE_ENTITY).body("Semantically incorrect parameters")
 }

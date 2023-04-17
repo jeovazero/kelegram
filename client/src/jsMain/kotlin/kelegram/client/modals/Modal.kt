@@ -56,6 +56,7 @@ object ModalStylesheet : StyleSheet() {
 data class ModalAction(
     val labelText: String,
     val variant: Variant = Variant.Primary,
+    val hide: Boolean = false,
     val onClick: (() -> Unit)? = null,
 )
 
@@ -88,10 +89,14 @@ fun Modal(
             }
             Stack(spacing = Spacing.Small) {
                 actions.forEach { action ->
-                    Button(fullWidth = false,
-                        onClick = action.onClick,
-                        variant = action.variant) {
-                        Text(action.labelText)
+                    if (!action.hide) {
+                        Button(
+                            fullWidth = false,
+                            onClick = action.onClick,
+                            variant = action.variant
+                        ) {
+                            Text(action.labelText)
+                        }
                     }
                 }
             }
